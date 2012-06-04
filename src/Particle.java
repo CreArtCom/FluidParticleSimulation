@@ -1,31 +1,48 @@
-/**
- * Something about Licence
- * 
- * @author		Léo LEFEBVRE
- * @version		1.0
- */
 
 import com.cycling74.jitter.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-class Particle
+/**
+ * A particle is a little 2D circle in a mechanical system.
+ * A particle could be free, ie without any initial attachment, or tied up.
+ * Tied up particles are linked up to a grid, which means it has a spring attached to an initial position.
+ * 
+ * @author	CreArtCom's Studio
+ * @author	Léo LEFEBVRE
+ * @version	1.0
+ */
+public class Particle
 {
-    JitterMatrix outMatrix;
-	ParticlesSystem particlesSystem;
-    Random generator;
-	boolean isFree;
-    
-    int i, j;
-    float initX, initY;
-	List<Float> xHistory;
-	List<Float> yHistory;
-    float x, y;
-	float vx, vy;
-
-	// Constructeur pour les particules liées à la grille
-    Particle(int i, int j, float[] coordinates, ParticlesSystem particlesSystem)
+    private JitterMatrix outMatrix;
+	private ParticlesSystem particlesSystem;
+    private Random generator;
+	private boolean isFree;
+    private int i, j;
+    private float initX, initY;
+	private List<Float> xHistory;
+	private List<Float> yHistory;
+	private float vx, vy;
+	
+	/**
+	 * Current abscissa of the particle scaled by ParticlesSystem.ENGINE_X
+	 */
+    protected float x;
+	
+	/**
+	 * Current ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
+	 */
+	protected float y;
+	
+	/**
+	 * Construct a grid's tied up particle.
+	 * @param i Column index in the grid
+	 * @param j Line index in the grid
+	 * @param coordinates Initial's coordinates of the particle scaled by ParticlesSystem.ENGINE...
+	 * @param particlesSystem Particle's System
+	 */
+    public Particle(int i, int j, float[] coordinates, ParticlesSystem particlesSystem)
     {
 		this.particlesSystem = particlesSystem;
 		generator = new Random();
@@ -43,8 +60,14 @@ class Particle
 		particlesSystem.setParticleInitPosition(i, j, initX, initY);
     }
 
-	// Constructeur pour les particules libres
-	Particle(int i, float x, float y, ParticlesSystem particlesSystem)
+	/**
+	 * Construct a free particle.
+	 * @param i Index in free particles' list
+	 * @param x Abscissa of the particle scaled by ParticlesSystem.ENGINE_X
+	 * @param y Ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
+	 * @param particlesSystem Particle's System
+	 */
+	public Particle(int i, float x, float y, ParticlesSystem particlesSystem)
 	{
 		isFree = true;
 		this.particlesSystem = particlesSystem;
@@ -60,10 +83,11 @@ class Particle
 		changeMemory(memory);
 	}
 	
-	public final void changeMemory(int memory)
+	private void changeMemory(int memory)
 	{
 		xHistory.clear();
 		yHistory.clear();
+		
 		for(int k = 0; k < memory; k++)
 		{
 			xHistory.add(x);
@@ -71,7 +95,10 @@ class Particle
 		}
 	}
     
-	void update() 
+	/**
+	 * Compute the new particle's position
+	 */
+	public void update() 
 	{
 		// On applique un grain de sel
 		vx += (generator.nextFloat() - 0.5f) * particlesSystem.getMomentum();
@@ -131,7 +158,10 @@ class Particle
 //		}
 	}
 
-    void setNewPosition() 
+	/**
+	 * Notify the particle's position to the particle's System
+	 */
+	public void notifyPosition() 
     {
 		if(!isFree)
 			particlesSystem.setParticlePosition(i, j, x, y);
@@ -139,7 +169,6 @@ class Particle
 		{
 			Float[] xArray = new Float[xHistory.size()];
 			Float[] yArray = new Float[yHistory.size()];
-			int memory = particlesSystem.getMemory();
 			
 			for(int k = 0; k < xHistory.size(); k++)
 			{
@@ -151,18 +180,28 @@ class Particle
 		}
     }
 	
-
-	void Move(float dx, float dy) {
+	/**
+	 * Apply a force for the next update (erase others)
+	 * @param dx Force value on x axis
+	 * @param dy Force value on y axis
+	 */
+	public void applyForce(float dx, float dy) {
 		vx = dx;
 		vy = dy;
 	}
 
-	/********************************* GETTERS *********************************/
+	/**
+	 * Add a force for the next update (added to others)
+	 * @param dx Force value on x axis
+	 * @param dy Force value on y axis
+	 */
+	public void addForce(float dx, float dy) {
+		vx += dx;
+		vy += dy;
+	}
 	
 	/**
-	 * Getter : x
-	 * @return	Position courante de la particule sur l'axe X normalisée entre 
-	 *			ParticlesSystem.ENGINE_X[0]	et ParticlesSystem.ENGINE_X[1]
+	 * @return	x
      * @since	1.0
      */
 	float getX() {
@@ -170,9 +209,7 @@ class Particle
 	}
 
 	/**
-	 * Getter : y
-	 * @return	Position courante de la particule sur l'axe Y normalisée entre 
-	 *			ParticlesSystem.ENGINE_Y[0]	et ParticlesSystem.ENGINE_Y[1]
+	 * @return	y
      * @since	1.0
      */
 	float getY() {

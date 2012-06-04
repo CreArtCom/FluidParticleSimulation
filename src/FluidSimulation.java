@@ -1,13 +1,11 @@
-/**
- * Something about Licence
- * 
- * @author		Léo LEFEBVRE
- * @version		1.0
- */
-
 import com.cycling74.max.*;
 import java.awt.Color;
- 
+
+/**
+ * @author	CreArtCom's Studio
+ * @author	Léo LEFEBVRE
+ * @version	1.0
+ */
 public class FluidSimulation extends FluidParticleSimulation
 {
     // Définition des messages d'entrée

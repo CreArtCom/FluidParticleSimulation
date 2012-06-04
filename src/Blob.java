@@ -1,26 +1,51 @@
-/**
- * Something about Licence
- * 
- * @author		
- * @author		Léo LEFEBVRE
- * @version		1.0
- */
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * A blob is something that interfere with the simulation.
+ * Blobs are located in 2D planes.
+ * 
+ * @author	CreArtCom's Studio
+ * @author	Léo LEFEBVRE
+ * @version	1.0
+ */
 public class Blob
 {
-	// Normalisées de minEngine à maxEngine
-	private float x;
-	private float y;
-	private float deltaX;
-	private float deltaY;
-	
-	private FluidParticleSimulation fluidParticleSimulation;
-
 	/**
-	 * Construit un blob en normalisant ses coordonnées
-     * @param x				Abcisse du blob borné selon msg_x_scale
-	 * @param y				Ordonnée du blob borné selon msg_y_scale
-	 * @param simulation	Objet chargé d'effectuer la simulation
+	 * Blob's center abscissa scaled into ParticlesSystem.ENGINE_X
+	 */
+	protected float x;
+	
+	/**
+	 * Blob's center ordinate scaled into ParticlesSystem.ENGINE_X
+	 */
+	protected float y;
+	
+	/**
+	 * Difference between the two last blob's abcissas
+	 */
+	protected float deltaX;
+	
+	/**
+	 * Difference between the two last blob's ordinates
+	 */
+	protected float deltaY;
+	
+	/**
+	 * Object responsible for conducting the simulation, contains few parameters
+	 */
+	protected FluidParticleSimulation fluidParticleSimulation;
+
+	private List<Float> deltaXList;
+	private List<Float> deltaYList;
+	private List<Float> xList;
+	private List<Float> yList;
+	
+	/**
+	 * Construct a blob from normalized coordinates
+     * @param x				Blob's center abscissa scaled in MSG_XSCALE
+	 * @param y				Blob's center ordinate scaled in MSG_YSCALE
+	 * @param simulation	Object responsible for conducting the simulation
      * @since				1.0
      */
 	public Blob(float x, float y, FluidParticleSimulation simulation)
@@ -29,21 +54,33 @@ public class Blob
 		float[] norms = scale(x, y);
 		this.x = norms[0];
 		this.y = norms[1];
+		
+		xList = new ArrayList<Float>();
+		yList = new ArrayList<Float>();
+		deltaXList = new ArrayList<Float>();
+		deltaYList = new ArrayList<Float>();
 	}
 
+	/**
+	 * Move a blob to a new position
+	 * @param posX	New blob's abscissa scaled in MSG_XSCALE
+	 * @param posY	New blob's ordinate scaled in MSG_YSCALE
+	 */
 	public void Move(float posX, float posY)
 	{
 		float[] norms = scale(posX, posY);
 		deltaX = norms[0] - x;
 		x = norms[0];
-		//deltaX = Math.abs(deltaX) > fluidParticleSimulation.getBlobSeuil() ? deltaX : 0;
 
 		deltaY = norms[1] - y;
 		y = norms[1];
-		//deltaY = Math.abs(deltaY) > fluidParticleSimulation.getBlobSeuil() ? deltaY : 0;
+
+		xList.add(x);
+		yList.add(y);
+		deltaXList.add(deltaX);
+		deltaYList.add(deltaY);
 	}
 	
-
 	private float[] scale(float posX, float posY)
 	{
 		float[] xCoefs = fluidParticleSimulation.getXCoefs();
@@ -52,12 +89,16 @@ public class Blob
 		return new float[]{((xCoefs[0] * posX) + xCoefs[1]), ((yCoefs[0] * posY) + yCoefs[1])};
 	}
 	
-	/********************************* GETTERS *********************************/
+	/**
+	 * Determine if the blob has moved by using a threshold
+	 * @return <code>true</code> if the blob's last movements are significants, otherwise <code>false</code>
+	 */
+	public boolean hasMoved() {
+		return xList.size() > 0;//Math.abs(getDeltaX()) > fluidParticleSimulation.getBlobSeuil() || Math.abs(getDeltaY()) > fluidParticleSimulation.getBlobSeuil();
+	}
 	
 	/**
-	 * Getter : x
-	 * @return	Position courante du blob sur l'axe X normalisée entre 
-	 *			ParticlesSystem.ENGINE_X[0]	et ParticlesSystem.ENGINE_X[1]
+	 * @return	x
      * @since	1.0
      */
 	public float getX() {
@@ -65,9 +106,7 @@ public class Blob
 	}
 
 	/**
-	 * Getter : y
-	 * @return	Position courante du blob sur l'axe Y normalisée entre 
-	 *			ParticlesSystem.ENGINE_X[0]	et ParticlesSystem.ENGINE_X[1]
+	 * @return	y
      * @since	1.0
      */
 	public float getY() {
@@ -75,10 +114,7 @@ public class Blob
 	}
 	
 	/**
-	 * Getter : deltaX
-	 * @return	La différence de distance entre les deux dernières positions du 
-	 *			blob selon l'axe X, le tout pondéré par la valeur de
-	 *			fluidParticleSimulation.blobForce
+	 * @return	deltaX weighted by fluidParticleSimulation.blobForce
      * @since	1.0
      */
 	public float getDeltaX() {
@@ -86,13 +122,28 @@ public class Blob
 	}
 
 	/**
-	 * Getter : deltaY
-	 * @return	La différence de distance entre les deux dernières positions du 
-	 *			blob selon l'axe Y, le tout pondéré par la valeur de
-	 *			fluidParticleSimulation.blobForce
+	 * @return	deltaY weighted by fluidParticleSimulation.blobForce
      * @since	1.0
      */
 	public float getDeltaY() {
 		return deltaY * fluidParticleSimulation.getBlobForce();
+	}
+	
+	/**
+	 * 
+	 * @return 
+	 */
+	public List<Float[]> getMouvements()
+	{
+		List<Float[]> result = new ArrayList<Float[]>();
+		int size = xList.size();
+		
+		for(int i = 0; i < size; i++)
+		{
+			Float[] mouvement = {xList.remove(0), yList.remove(0), deltaXList.remove(0), deltaYList.remove(0)};
+			result.add(mouvement);
+		}
+		
+		return result;
 	}
 }

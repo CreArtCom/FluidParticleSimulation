@@ -1,15 +1,12 @@
-/**
- * Something about Licence
- * 
- * @author		Léo LEFEBVRE
- * @version		1.0
- */
-
 import com.cycling74.jitter.JitterMatrix;
 import java.awt.Color;
 import msafluid.MSAFluidSolver2D;
 
-
+/**
+ * @author	CreArtCom's Studio
+ * @author	Léo LEFEBVRE
+ * @version	1.0
+ */
 public class FluidSolver
 {
 	// Paramètres par défaut

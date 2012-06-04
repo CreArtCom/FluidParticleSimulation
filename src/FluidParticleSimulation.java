@@ -1,20 +1,20 @@
-/**
- * Something about Licence
- * 
- * @author		Léo LEFEBVRE
- * @version		1.0
- */
-
 import com.cycling74.max.Atom;
 import com.cycling74.max.MaxObject;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * @author	CreArtCom's Studio
+ * @author	Léo LEFEBVRE
+ * @version	1.0
+ */
 public class FluidParticleSimulation extends MaxObject
 {
 	// Bornes coordonnées GL
-	protected static float[] GL_X = {-1, 1};
-	protected static float[] GL_Y = {-1, 1};
+	protected static float[] GL_X = {-1.f, 1.f};
+	protected static float[] GL_Y = {-1.f, 1.f};
 	
     // Définition des messages d'entrée
     protected static String MSG_MATRIX		= "jit_matrix";
@@ -32,11 +32,12 @@ public class FluidParticleSimulation extends MaxObject
 	protected static final float BLOB_RADIUS	= 0.5f;
 	protected static final float BLOB_WIDTH		= 0.5f;
 	protected static final float BLOB_HEIGHT	= 0.5f;
-	protected static final float[] XCOEFS		= {0, 1};
-	protected static final float[] YCOEFS		= {0, 1};	
+	protected static final float[] XCOEFS		= {0.f, 1.f};
+	protected static final float[] YCOEFS		= {0.f, 1.f};	
 	
 	// Attributs
 	protected Map<Integer, Blob> blobs;
+	protected List<Integer> updatedIndexes;
 	protected float blobSeuil;
 	protected float blobForce;
 	protected float[] xCoefs;
@@ -45,11 +46,12 @@ public class FluidParticleSimulation extends MaxObject
 	public FluidParticleSimulation(Atom[] args)
 	{
 		// Initialisation des Attributs
-		blobSeuil	= BLOB_SEUIL;
-		blobForce	= BLOB_FORCE;
-		xCoefs		= XCOEFS;
-		yCoefs		= YCOEFS;
-		blobs		= new HashMap<Integer, Blob>();
+		blobSeuil		= BLOB_SEUIL;
+		blobForce		= BLOB_FORCE;
+		xCoefs			= XCOEFS;
+		yCoefs			= YCOEFS;
+		blobs			= new HashMap<Integer, Blob>();
+		updatedIndexes	= new ArrayList<Integer>();
 		
 		createInfoOutlet(true);
 	}
@@ -101,7 +103,11 @@ public class FluidParticleSimulation extends MaxObject
 		else if(args.length == 3)
 		{
 			if(message.contentEquals(MSG_BLOB))
+			{
+				if(!updatedIndexes.contains(args[0].toInt()))
+					updatedIndexes.add(args[0].toInt());
 				applyBlob(args[0].toInt(), args[1].toFloat(), args[2].toFloat());
+			}
 			
 			else
 				unknownMessage = true;
@@ -156,6 +162,32 @@ public class FluidParticleSimulation extends MaxObject
 		}
 		
 		return new float[]{A, B};
+	}
+	
+	public List<Blob> getUpdatedBlobs()
+	{
+		List<Blob> result = new ArrayList<Blob>();
+		
+		for(Integer index : updatedIndexes)
+		{
+			Blob blob = blobs.get(index);
+			if(blob.hasMoved())
+				result.add(blob);
+		}
+		
+		updatedIndexes.clear();
+		
+		return result;
+	}
+	
+	public List<Float[]> getBlobsMouvements()
+	{
+		List<Float[]> result = new ArrayList<Float[]>();
+		
+		for(Blob blob : getUpdatedBlobs())
+			result.addAll(blob.getMouvements());
+		
+		return result;
 	}
 	
 	/********************************* GETTERS *********************************/

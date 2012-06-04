@@ -1,13 +1,11 @@
-/**
- * Something about Licence
- * 
- * @author		Léo LEFEBVRE
- * @version		1.0
- */
-
 import com.cycling74.max.*;
 import com.cycling74.jitter.*;
- 
+
+/**
+ * @author	CreArtCom's Studio
+ * @author	Léo LEFEBVRE
+ * @version	1.0
+ */
 public class ParticlesSimulation extends FluidParticleSimulation
 {
     // Définition des messages d'entrée
@@ -22,20 +20,20 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	protected static String MSG_FRICTION	= "friction";
 	protected static String MSG_FLUIDFORCE	= "fluid_force";
 	protected static String MSG_FLUIDAPPLY	= "fluid_apply";
-	protected static String MSG_ADDFORCE	= "add_force";
 	protected static String MSG_ADDPART		= "add_particles";
+	protected static String MSG_ADDFORCE	= "add_force";
 	protected static String MSG_MEMORY		= "memory";
+	protected static String MSG_FREEMAX		= "free_max";
 	
 	// Paramètres par défaut
-    protected static final float	FLUID_FORCE		= 0.6f;
-    protected static final boolean	FLUID_APPLY		= false;
-    protected static final boolean	ADD_FORCE		= false;
-    protected static final int		PART_NBTOADD	= 0;
+    protected static final float	FLUID_FORCE			= 0.6f;
+    protected static final boolean	FLUID_FORCE_APPLY	= false;
+    protected static final boolean	BLOB_FORCE_APPLY	= false;
+    protected static final int		PART_NBTOADD		= 0;
 	
 	// Attributs
 	private float fluidForce;
     private ParticlesSystem particlesSystem;
-	private boolean applyFluid;
 	private MaxObject fluidSimulation;
 	private int fluidCells;
 	private int fluidWidth;
@@ -44,8 +42,10 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	private float[] fluidV;
 	private float stepWidth;
 	private float stepHeight;
-	private boolean addForce;
 	private int particlesToAdd;
+	private boolean applyFluidForce;
+	private boolean applyBlobForce;
+	private boolean applyAttractivity = true;
 	
     // Jitter Objects
     JitterMatrix outGridMatrix;
@@ -70,9 +70,9 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		
 		// Initialisation des Attributs
 		fluidForce		= FLUID_FORCE;
-		applyFluid		= FLUID_APPLY;
+		applyFluidForce	= FLUID_FORCE_APPLY;
+		applyBlobForce	= BLOB_FORCE_APPLY;
 		fluidSimulation = null;
-		addForce		= ADD_FORCE;
 		particlesToAdd	= PART_NBTOADD;
 
     	// On créer le système de particules
@@ -86,18 +86,21 @@ public class ParticlesSimulation extends FluidParticleSimulation
         // Message de Bang sur l'inlet 0
         if(getInlet() == 0)
         {
-			if(applyFluid && fluidSimulation != null)
+			if(applyFluidForce)
 			{
 				fluidU = fluidSimulation.getAttrFloatArray("fluid_u");
 				fluidV = fluidSimulation.getAttrFloatArray("fluid_v");
 			}
 			
-			particlesSystem.update(applyFluid && fluidSimulation != null);
+			particlesSystem.update();
 			
 			outlet(2, MSG_MATRIX, outFreeMatrix.getName());
 			
-			if(particlesSystem.hasParticles())
+			if(particlesSystem.hasGridParticles())
 				outlet(0, MSG_MATRIX, outGridMatrix.getName());
+			
+			// On efface la liste des indexes de blob mis à jour jusqu'au prochain bang
+			//updatedIndexes.clear();
         }
     }
 	
@@ -153,20 +156,24 @@ public class ParticlesSimulation extends FluidParticleSimulation
 				else if(message.contentEquals(MSG_FLUIDAPPLY))
 				{
 					fluidSimulation = MaxObject.getContext().getMaxObject("FluidSimulation");
-					applyFluid = args[0].toBoolean();
+					applyFluidForce = args[0].toBoolean() && fluidSimulation != null;
+					particlesSystem.setApplyFluidForce(applyFluidForce);
 				}
 
 				else if(message.contentEquals(MSG_PARTSEUIL))
-					particlesSystem.setSeuil(args[0].toFloat());
-				
-				else if(message.contentEquals(MSG_ADDFORCE))
-					addForce = args[0].toBoolean();
+					particlesSystem.setThreshold(args[0].toFloat());
 				
 				else if(message.contentEquals(MSG_ADDPART))
 					particlesToAdd = args[0].toInt();
 				
+				else if(message.contentEquals(MSG_ADDFORCE))
+					applyBlobForce = args[0].toBoolean();
+				
 				else if(message.contentEquals(MSG_MEMORY))
 					particlesSystem.setMemory(args[0].toInt());
+				
+				else if(message.contentEquals(MSG_FREEMAX))
+					particlesSystem.setMaxFreeParticles(args[0].toInt());
 				
 				else
 					unknownMessage = true;
@@ -215,8 +222,12 @@ public class ParticlesSimulation extends FluidParticleSimulation
 			blob.Move(posX, posY);
 
 			// On ajoute de la force aux particles
-			if(addForce)
-				particlesSystem.addForce(blob.getX(), blob.getY(), blob.getDeltaX(), blob.getDeltaY());
+			//if(applyForce)
+			//	particlesSystem.addForce(blob.getX(), blob.getY(), blob.getDeltaX(), blob.getDeltaY());
+			
+			// On ajoute de l'attractivité aux particles
+//			if(addAttractivity)
+//				particlesSystem.addAttractivity(blob.getX(), blob.getY());
 			
 			// On ajoute des particles
 			if(particlesToAdd > 0)
@@ -225,7 +236,10 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		
 		// On initilise un nouveau blob
 		else
-			blobs.put(index, new Blob(posX, posY, this));		
+		{
+			printOut(">>>newBlob<<<");
+			blobs.put(index, new Blob(posX, posY, this));
+		}	
 	}
 	
 	protected float[] applyFluid(float posX, float posY)
@@ -248,8 +262,17 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		initGridMatrix.freePeer();
 		particlesSystem.destroy();
     }
+
+	public boolean applyBlobForce() {
+		return applyBlobForce && blobForce != 0.f;
+	}
+	
+	public boolean applyAttractivity() {
+		return applyAttractivity;
+	}
 	
 	/********************************* GETTERS *********************************/
+
 	/**
 	 * Getter : outGridMatrix
 	 * @return	Matrice contenant le centre des particules liés à la grille 
