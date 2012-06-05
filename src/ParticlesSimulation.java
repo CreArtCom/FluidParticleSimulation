@@ -234,12 +234,9 @@ public class ParticlesSimulation extends FluidParticleSimulation
 				particlesSystem.addParticles(blob.getX(), blob.getY(), particlesToAdd);
 		}
 		
-		// On initilise un nouveau blob
+		// On initialise un nouveau blob
 		else
-		{
-			printOut(">>>newBlob<<<");
 			blobs.put(index, new Blob(posX, posY, this));
-		}	
 	}
 	
 	protected float[] applyFluid(float posX, float posY)

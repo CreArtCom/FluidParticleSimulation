@@ -79,9 +79,6 @@ public class ParticlesSystem
 		// Calcul des coeffs pour l'interpolation GL
 		xTo = ParticlesSimulation.computeCoefs(ENGINE_X, ParticlesSimulation.GL_X);
 		yTo = ParticlesSimulation.computeCoefs(ENGINE_Y, ParticlesSimulation.GL_Y);
-		
-		// Init Free Matrix
-		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
 	}
 
 	/** Update the whole particle's System (each particle position) */
@@ -280,6 +277,11 @@ public class ParticlesSystem
 		if(particlesFree.size() >= maxFreeParticles)
 			particlesFree.remove(0);
 		
+		// Si la matrice est pas pleine on ajoute une ligne
+		int[] dim = particlesSimulation.getFreeMatrix().getDim();
+		if(particlesFree.size() == dim[1])
+			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size() + 1});
+			
 		return (current++ % maxFreeParticles);
 	}
 	
@@ -298,6 +300,8 @@ public class ParticlesSystem
 	public void reset() {
 		reloadParticles();
 		particlesFree.clear();
+		particlesSimulation.getFreeMatrix().setDim(new int[]{0, 0});
+		particlesSimulation.getFreeMatrix().clear();
 	}
 
 	/**
@@ -391,7 +395,6 @@ public class ParticlesSystem
 			particlesFree = particlesFree.subList((this.maxFreeParticles - maxFreeParticles), this.maxFreeParticles);
 		
 		this.maxFreeParticles = maxFreeParticles;
-		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
 	}
 	
 	/**
@@ -403,7 +406,8 @@ public class ParticlesSystem
 		if(memory > 0)
 		{
 			this.memory = memory;
-			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
+			int[] dim = particlesSimulation.getFreeMatrix().getDim();
+			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, dim[1]});
 		}
 	}
 
