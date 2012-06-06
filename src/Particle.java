@@ -123,13 +123,19 @@ public class Particle
 		
 		if(isFree)
 		{
-			if(xHistory.size() == particlesSystem.getMemory())
+			// On dépile le trop plein et/ou le plus vieux
+			while(xHistory.size() >= particlesSystem.getMemory())
 			{
 				xHistory.remove(0);
 				yHistory.remove(0);
 			}
-			xHistory.add(x);
-			yHistory.add(y);
+			
+			// On empile le manquement et/ou le nouveau
+			while(xHistory.size() < particlesSystem.getMemory())
+			{
+				xHistory.add(x);
+				yHistory.add(y);
+			}
 		}
 
 		// bounce of edges

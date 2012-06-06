@@ -24,6 +24,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	protected static String MSG_ADDFORCE	= "add_force";
 	protected static String MSG_MEMORY		= "memory";
 	protected static String MSG_FREEMAX		= "free_max";
+	protected static String MSG_LOADFREE	= "free_load";
 	
 	// Paramètres par défaut
     protected static final float	FLUID_FORCE			= 0.6f;
@@ -65,7 +66,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		
 		// Initialisation des matrices
 		outGridMatrix	= new JitterMatrix(2, "float32", 0, 0);
-		outFreeMatrix	= new JitterMatrix(2, "float32", 2, 0);
+		outFreeMatrix	= new JitterMatrix(2, "float32", 0, 0);
 		initGridMatrix	= new JitterMatrix(2, "float32", 0, 0);
 		
 		// Initialisation des Attributs
@@ -119,6 +120,12 @@ public class ParticlesSimulation extends FluidParticleSimulation
 				if(message.contentEquals(MSG_RESET))
 				{
 					particlesSystem.reset();
+					outlet(1, MSG_MATRIX, initGridMatrix.getName());
+				}
+				
+				else if(message.contentEquals(MSG_LOADFREE))
+				{
+					//particlesSystem.loadFreeParticles();
 					outlet(1, MSG_MATRIX, initGridMatrix.getName());
 				}
 
