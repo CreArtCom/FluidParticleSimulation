@@ -109,10 +109,14 @@ public class ParticlesSystem
 		{
 			// On récupère la liste des blobs intéressants
 			for(Float[] mouvement : blobsMouvements)
-			{
+			{				
 				// On ajoute la force des blobs aux particles
 				if(particlesSimulation.applyBlobForce())
 					addForce(p, mouvement);
+				
+				// On détruit les particles dans la brosse
+				else if(particlesSimulation.applyBlobEraser())
+					deleteFree(p, mouvement);
 
 				// On ajoute la force des attracteurs
 				if(particlesSimulation.applyAttractivity())
@@ -233,6 +237,15 @@ public class ParticlesSystem
 	{
 		if(intersect(particle, mouvement[0], mouvement[1]))
 			particle.addForce(mouvement[2], mouvement[3]);
+	}
+	
+	private void deleteFree(Particle particle, Float[] mouvement)
+	{
+		if(intersect(particle, mouvement[0], mouvement[1]))
+		{
+			particlesFree.remove(particle.getIIndex());
+			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+		}
 	}
 	
 	public void addAttractivity(Particle particle, Float[] mouvement)//float posX, float posY)
@@ -393,12 +406,12 @@ public class ParticlesSystem
 			// On réduit le nombre max de particules libres
 			if(this.maxFreeParticles > maxFreeParticles)
 			{
+				// On conserve les maxFreeParticles premières particules
+				if(particlesFree.size() > maxFreeParticles)
+					particlesFree = particlesFree.subList(0, maxFreeParticles);
+				
 				// On met à jour les dimensions de la matrice
 				particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
-			
-				// On conserve les maxFreeParticles dernières particules
-				if(particlesFree.size() > maxFreeParticles)
-					particlesFree = particlesFree.subList((particlesFree.size() - maxFreeParticles), this.maxFreeParticles);
 			}
 
 			this.maxFreeParticles = maxFreeParticles;

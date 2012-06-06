@@ -242,4 +242,8 @@ public class Particle
 	float getY() {
 		return y;
 	}
+
+	public int getIIndex() {
+		return i;
+	}
 }

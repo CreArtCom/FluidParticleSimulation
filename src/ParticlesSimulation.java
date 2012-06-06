@@ -303,4 +303,8 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	public JitterMatrix getInitMatrix() {
 		return initGridMatrix;
 	}
+
+	boolean applyBlobEraser() {
+		return false;
+	}
 }
