@@ -83,6 +83,27 @@ public class Particle
 		changeMemory(memory);
 	}
 	
+	/**
+	 * Construct a free particle on a random position
+	 * @param i Index in free particles' list
+	 * @param particlesSystem Particle's System
+	 */
+	public Particle(int i, ParticlesSystem particlesSystem)
+	{
+		isFree = true;
+		this.particlesSystem = particlesSystem;
+		generator = new Random();
+		
+		this.i = i;
+		this.x = generator.nextFloat();
+        this.y = generator.nextFloat();
+		
+		int memory = particlesSystem.getMemory();
+		this.xHistory = new ArrayList<Float>(memory);
+        this.yHistory = new ArrayList<Float>(memory);
+		changeMemory(memory);
+	}
+	
 	private void changeMemory(int memory)
 	{
 		xHistory.clear();

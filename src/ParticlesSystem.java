@@ -270,14 +270,7 @@ public class ParticlesSystem
 		}
 		
 		for(int i = 0; i < nbToAdd; i++)
-		{
-			int index = getFreeIndex();
-				
-			for(int j = 0; j < memory; j++)
-				particlesSimulation.getFreeMatrix().setcell2d(j, index, scaleTo(x, y));
-			
-			particlesFree.add(new Particle(index, x, y, this));
-		}
+			particlesFree.add(new Particle(getFreeIndex(), x, y, this));
 	}
 	
 	private int getFreeIndex()
@@ -400,10 +393,12 @@ public class ParticlesSystem
 			// On réduit le nombre max de particules libres
 			if(this.maxFreeParticles > maxFreeParticles)
 			{
-				// On conserve les maxFreeParticles dernières particules
-				particlesFree = particlesFree.subList((this.maxFreeParticles - maxFreeParticles), this.maxFreeParticles);
-				// On met à jour la taille du tableau
+				// On met à jour les dimensions de la matrice
 				particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+			
+				// On conserve les maxFreeParticles dernières particules
+				if(particlesFree.size() > maxFreeParticles)
+					particlesFree = particlesFree.subList((particlesFree.size() - maxFreeParticles), this.maxFreeParticles);
 			}
 
 			this.maxFreeParticles = maxFreeParticles;
@@ -509,5 +504,14 @@ public class ParticlesSystem
      */
 	public int getMemory() {
 		return memory;
+	}
+
+	void loadFreeParticles()
+	{
+		particlesFree.clear();
+		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
+		
+		for(current = 0; current < maxFreeParticles; current++)
+			particlesFree.add(new Particle(current, this));
 	}
 }

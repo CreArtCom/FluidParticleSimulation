@@ -124,10 +124,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 				}
 				
 				else if(message.contentEquals(MSG_LOADFREE))
-				{
-					//particlesSystem.loadFreeParticles();
-					outlet(1, MSG_MATRIX, initGridMatrix.getName());
-				}
+					particlesSystem.loadFreeParticles();
 
 				else
 					unknownMessage = true;
