@@ -24,12 +24,14 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	protected static String MSG_ADDFORCE	= "add_force";
 	protected static String MSG_MEMORY		= "memory";
 	protected static String MSG_FREEMAX		= "free_max";
-	protected static String MSG_LOADFREE	= "free_load";
+	protected static String MSG_FREELOAD	= "free_load";
+	protected static String MSG_FREEERASER	= "free_erase";
 	
 	// Paramètres par défaut
     protected static final float	FLUID_FORCE			= 0.6f;
     protected static final boolean	FLUID_FORCE_APPLY	= false;
     protected static final boolean	BLOB_FORCE_APPLY	= false;
+    protected static final boolean	BLOB_ERASER_APPLY	= false;
     protected static final int		PART_NBTOADD		= 0;
 	
 	// Attributs
@@ -47,6 +49,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	private boolean applyFluidForce;
 	private boolean applyBlobForce;
 	private boolean applyAttractivity = true;
+	private boolean applyBlobEraser;
 	
     // Jitter Objects
     JitterMatrix outGridMatrix;
@@ -75,6 +78,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		applyBlobForce	= BLOB_FORCE_APPLY;
 		fluidSimulation = null;
 		particlesToAdd	= PART_NBTOADD;
+		applyBlobEraser	= BLOB_ERASER_APPLY;
 
     	// On créer le système de particules
 		particlesSystem = new ParticlesSystem(this);
@@ -99,9 +103,6 @@ public class ParticlesSimulation extends FluidParticleSimulation
 			
 			if(particlesSystem.hasGridParticles())
 				outlet(0, MSG_MATRIX, outGridMatrix.getName());
-			
-			// On efface la liste des indexes de blob mis à jour jusqu'au prochain bang
-			//updatedIndexes.clear();
         }
     }
 	
@@ -123,7 +124,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 					outlet(1, MSG_MATRIX, initGridMatrix.getName());
 				}
 				
-				else if(message.contentEquals(MSG_LOADFREE))
+				else if(message.contentEquals(MSG_FREELOAD))
 					particlesSystem.loadFreeParticles();
 
 				else
@@ -179,6 +180,9 @@ public class ParticlesSimulation extends FluidParticleSimulation
 				else if(message.contentEquals(MSG_FREEMAX))
 					particlesSystem.setMaxFreeParticles(args[0].toInt());
 				
+				else if(message.contentEquals(MSG_FREEERASER))
+					applyBlobEraser = args[0].toBoolean();
+				
 				else
 					unknownMessage = true;
 
@@ -224,18 +228,10 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		{
 			Blob blob = blobs.get(index);
 			blob.Move(posX, posY);
-
-			// On ajoute de la force aux particles
-			//if(applyForce)
-			//	particlesSystem.addForce(blob.getX(), blob.getY(), blob.getDeltaX(), blob.getDeltaY());
-			
-			// On ajoute de l'attractivité aux particles
-//			if(addAttractivity)
-//				particlesSystem.addAttractivity(blob.getX(), blob.getY());
 			
 			// On ajoute des particles
 			if(particlesToAdd > 0)
-				particlesSystem.addParticles(blob.getX(), blob.getY(), particlesToAdd);
+				particlesSystem.addFreeParticles(blob.getX(), blob.getY(), particlesToAdd);
 		}
 		
 		// On initialise un nouveau blob
@@ -272,6 +268,10 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		return applyAttractivity;
 	}
 	
+	boolean applyBlobEraser() {
+		return applyBlobEraser;
+	}
+	
 	/********************************* GETTERS *********************************/
 
 	/**
@@ -302,9 +302,5 @@ public class ParticlesSimulation extends FluidParticleSimulation
      */
 	public JitterMatrix getInitMatrix() {
 		return initGridMatrix;
-	}
-
-	boolean applyBlobEraser() {
-		return false;
 	}
 }

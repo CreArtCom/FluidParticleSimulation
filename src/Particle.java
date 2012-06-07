@@ -1,29 +1,17 @@
-
-import com.cycling74.jitter.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 /**
  * A particle is a little 2D circle in a mechanical system.
- * A particle could be free, ie without any initial attachment, or tied up.
- * Tied up particles are linked up to a grid, which means it has a spring attached to an initial position.
- * 
+ *
  * @author	CreArtCom's Studio
  * @author	Léo LEFEBVRE
  * @version	1.0
  */
-public class Particle
+public abstract class Particle
 {
-    private JitterMatrix outMatrix;
-	private ParticlesSystem particlesSystem;
-    private Random generator;
-	private boolean isFree;
-    private int i, j;
-    private float initX, initY;
-	private List<Float> xHistory;
-	private List<Float> yHistory;
-	private float vx, vy;
+	protected ParticlesSystem particlesSystem;
+    protected Random generator;
+	protected float vx, vy;
 	
 	/**
 	 * Current abscissa of the particle scaled by ParticlesSystem.ENGINE_X
@@ -34,131 +22,37 @@ public class Particle
 	 * Current ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
 	 */
 	protected float y;
-	
+    
 	/**
-	 * Construct a grid's tied up particle.
-	 * @param i Column index in the grid
-	 * @param j Line index in the grid
-	 * @param coordinates Initial's coordinates of the particle scaled by ParticlesSystem.ENGINE...
+	 * Abstract constructor of a particle
 	 * @param particlesSystem Particle's System
 	 */
-    public Particle(int i, int j, float[] coordinates, ParticlesSystem particlesSystem)
+    public Particle(ParticlesSystem particlesSystem)
     {
 		this.particlesSystem = particlesSystem;
 		generator = new Random();
-		
-		isFree = false;
-		
-		this.x = coordinates[0];
-        this.y = coordinates[1];
-		this.initX = x;
-        this.initY = y;
-		
-        this.i = i;
-        this.j = j;
-		
-		particlesSystem.setParticleInitPosition(i, j, initX, initY);
     }
-
-	/**
-	 * Construct a free particle.
-	 * @param i Index in free particles' list
-	 * @param x Abscissa of the particle scaled by ParticlesSystem.ENGINE_X
-	 * @param y Ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
-	 * @param particlesSystem Particle's System
-	 */
-	public Particle(int i, float x, float y, ParticlesSystem particlesSystem)
-	{
-		isFree = true;
-		this.particlesSystem = particlesSystem;
-		generator = new Random();
-		
-		this.i = i;
-		this.x = x;
-        this.y = y;
-		
-		int memory = particlesSystem.getMemory();
-		this.xHistory = new ArrayList<Float>(memory);
-        this.yHistory = new ArrayList<Float>(memory);
-		changeMemory(memory);
-	}
 	
-	/**
-	 * Construct a free particle on a random position
-	 * @param i Index in free particles' list
-	 * @param particlesSystem Particle's System
-	 */
-	public Particle(int i, ParticlesSystem particlesSystem)
+	// On applique un grain de sel
+	protected void applyMoment()
 	{
-		isFree = true;
-		this.particlesSystem = particlesSystem;
-		generator = new Random();
-		
-		this.i = i;
-		this.x = generator.nextFloat();
-        this.y = generator.nextFloat();
-		
-		int memory = particlesSystem.getMemory();
-		this.xHistory = new ArrayList<Float>(memory);
-        this.yHistory = new ArrayList<Float>(memory);
-		changeMemory(memory);
-	}
-	
-	private void changeMemory(int memory)
-	{
-		xHistory.clear();
-		yHistory.clear();
-		
-		for(int k = 0; k < memory; k++)
-		{
-			xHistory.add(x);
-			yHistory.add(y);
-		}
-	}
-    
-	/**
-	 * Compute the new particle's position
-	 */
-	public void update() 
-	{
-		// On applique un grain de sel
 		vx += (generator.nextFloat() - 0.5f) * particlesSystem.getMomentum();
 		vy += (generator.nextFloat() - 0.5f) * particlesSystem.getMomentum();
-
-		// On applique le ressort sur les particules liées à la grille
-		if(!isFree)
-		{
-			float dx = (x - initX);
-			float dy = (y - initY);
-			vx -= particlesSystem.getStiffness() * dx;
-			vy -= particlesSystem.getStiffness() * dy;
-		}
-
-		// On applique les frottements
+	}
+	
+	// On applique les frottements
+	protected void applyFriction()
+	{
 		vx -= particlesSystem.getFriction() * vx;
 		vy -= particlesSystem.getFriction() * vy;
-		
-		// On met à jour la position
+	}
+	
+	// On met à jour la position
+	protected void updatePosition()
+	{
 		x += Math.abs(vx) > particlesSystem.getSeuil() ? vx : 0;
 		y += Math.abs(vy) > particlesSystem.getSeuil() ? vy : 0;
 		
-		if(isFree)
-		{
-			// On dépile le trop plein et/ou le plus vieux
-			while(xHistory.size() >= particlesSystem.getMemory())
-			{
-				xHistory.remove(0);
-				yHistory.remove(0);
-			}
-			
-			// On empile le manquement et/ou le nouveau
-			while(xHistory.size() < particlesSystem.getMemory())
-			{
-				xHistory.add(x);
-				yHistory.add(y);
-			}
-		}
-
 		// bounce of edges
 		if(x < 0) {
 			x = 0;//x - vx;
@@ -185,28 +79,6 @@ public class Particle
 //		}
 	}
 
-	/**
-	 * Notify the particle's position to the particle's System
-	 */
-	public void notifyPosition() 
-    {
-		if(!isFree)
-			particlesSystem.setParticlePosition(i, j, x, y);
-		else
-		{
-			Float[] xArray = new Float[xHistory.size()];
-			Float[] yArray = new Float[yHistory.size()];
-			
-			for(int k = 0; k < xHistory.size(); k++)
-			{
-				xArray[k] = (float) xHistory.get(k);
-				yArray[k] = (float) yHistory.get(k);
-			}
-			
-			particlesSystem.setParticlePosition(i, xArray, yArray);
-		}
-    }
-	
 	/**
 	 * Apply a force for the next update (erase others)
 	 * @param dx Force value on x axis
@@ -241,9 +113,5 @@ public class Particle
      */
 	float getY() {
 		return y;
-	}
-
-	public int getIIndex() {
-		return i;
 	}
 }

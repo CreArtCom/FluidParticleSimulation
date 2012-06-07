@@ -42,9 +42,10 @@ public class ParticlesSystem
 	protected float	seuil;
 	protected int	memory;
 	protected int	maxFreeParticles;
+	protected List<FreeParticle> freeParticlesToDel;
 	
-    private List<Particle> particlesGrid = new ArrayList<Particle>();
-	private List<Particle> particlesFree = new ArrayList<Particle>();
+    private List<GridParticle> particlesGrid;
+	private List<FreeParticle> particlesFree;
     private ParticlesSimulation particlesSimulation;
 
 	protected int		nbParticlesW;
@@ -75,6 +76,9 @@ public class ParticlesSystem
 		this.maxFreeParticles	= MAXFREEPART;
 		this.applyFluidForce	= ParticlesSimulation.FLUID_FORCE_APPLY;
 		this.current			= 0;
+		this.particlesGrid		= new ArrayList<GridParticle>();
+		this.particlesFree		= new ArrayList<FreeParticle>();
+		this.freeParticlesToDel	= new ArrayList<FreeParticle>();
 		
 		// Calcul des coeffs pour l'interpolation GL
 		xTo = ParticlesSimulation.computeCoefs(ENGINE_X, ParticlesSimulation.GL_X);
@@ -84,25 +88,35 @@ public class ParticlesSystem
 	/** Update the whole particle's System (each particle position) */
     public void update()
 	{
+		// Si la gomme est active on met à jour les dim de la matrice et la liste de particules
+		if(particlesSimulation.applyBlobEraser() && !freeParticlesToDel.isEmpty())
+		{
+			for(FreeParticle particle:freeParticlesToDel)
+				particlesFree.remove(particle);
+			freeParticlesToDel.clear();
+			
+			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+		}
+		
 		// On récupère la liste des blobs dont les coordonnées ont changées
 		List<Float[]> blobsMouvements = particlesSimulation.getBlobsMouvements();
 		
 		// Mise à jour du système de particules libres
-        for(Particle p : particlesFree)
-			updateParticle(p, blobsMouvements);
+        for(int i = 0; i < particlesFree.size(); i++)
+			updateFreeParticle(i, particlesFree.get(i), blobsMouvements);
 		
 		// Mise à jour du système de particules liées
-        for(Particle p : particlesGrid)
-			updateParticle(p, blobsMouvements);
+        for(GridParticle p : particlesGrid)
+			updateGridParticle(p, blobsMouvements);
 		
     }
 	
-	/** Update a particle position (select which forces are applied) */
-	private void updateParticle(Particle p, List<Float[]> blobsMouvements)
+	/** Update a grid particle position (select which forces are applied) */
+	private void updateGridParticle(GridParticle particle, List<Float[]> blobsMouvements)
 	{
 		// On ajoute la force du fluide aux particules
 		if(applyFluidForce)
-			addFluidForce(p, particlesSimulation.applyFluid(p.getX(), p.getY()));
+			addFluidForce(particle, particlesSimulation.applyFluid(particle.getX(), particle.getY()));
 		
 		// On ajoute des forces liées aux blobs
 		if(particlesSimulation.applyBlobForce() || particlesSimulation.applyAttractivity())
@@ -112,23 +126,50 @@ public class ParticlesSystem
 			{				
 				// On ajoute la force des blobs aux particles
 				if(particlesSimulation.applyBlobForce())
-					addForce(p, mouvement);
-				
-				// On détruit les particles dans la brosse
-				else if(particlesSimulation.applyBlobEraser())
-					deleteFree(p, mouvement);
+					addForce(particle, mouvement);
 
 				// On ajoute la force des attracteurs
 				if(particlesSimulation.applyAttractivity())
-					addAttractivity(p, mouvement);
+					addAttractivity(particle, mouvement);
 			}
 		}
 		
-		p.update();
-		p.notifyPosition();
+		particle.update();
+		setGridParticlePosition(particle.getI(), particle.getJ(), particle);
 	}
 	
-	private void reloadParticles()
+	/** Update a free particle position (select which forces are applied) */
+	private void updateFreeParticle(int index, FreeParticle particle, List<Float[]> blobsMouvements)
+	{
+		// On ajoute la force du fluide aux particules
+		if(applyFluidForce)
+			addFluidForce(particle, particlesSimulation.applyFluid(particle.getX(), particle.getY()));
+		
+		// On ajoute des forces liées aux blobs
+		if(particlesSimulation.applyBlobForce() || particlesSimulation.applyAttractivity())
+		{
+			// On récupère la liste des blobs intéressants
+			for(Float[] mouvement : blobsMouvements)
+			{				
+				// On ajoute la force des blobs aux particles
+				if(particlesSimulation.applyBlobForce())
+					addForce(particle, mouvement);
+				
+				// On détruit les particles dans la brosse
+				else if(particlesSimulation.applyBlobEraser())
+					deleteFree(particle, mouvement);
+
+				// On ajoute la force des attracteurs
+				if(particlesSimulation.applyAttractivity())
+					addAttractivity(particle, mouvement);
+			}
+		}
+		
+		particle.update();
+		setFreeParticlePosition(index, particle);
+	}
+	
+	private void reloadGridParticles()
 	{
 		particlesGrid.clear();
 		
@@ -136,7 +177,7 @@ public class ParticlesSystem
 		{
 			for(int j = 0; j < nbParticlesH; j++)
 			{
-				particlesGrid.add(new Particle(i, j, scaleFrom(i, j), this));
+				particlesGrid.add(new GridParticle(i, j, scaleFrom(i, j), this));
 			}
 		}
 	}
@@ -155,24 +196,22 @@ public class ParticlesSystem
 	 * Set up in the outGridMatrix the particle position scaled to FluidParticleSimulation.GL_...
 	 * @param i	Column's index of the particle
 	 * @param j Line's index of the particle
-	 * @param x Abscissa of the particle scaled by ParticlesSystem.ENGINE_X
-	 * @param y Ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
+	 * @param position Position of the particle scaled by ParticlesSystem.ENGINE_...
 	 */
-	protected void setParticlePosition(int i, int j, float x, float y) {
-		particlesSimulation.getGridMatrix().setcell2d(i, j, scaleTo(x, y));
+	protected void setGridParticlePosition(int i, int j, GridParticle particle) {
+		particlesSimulation.getGridMatrix().setcell2d(i, j, scaleTo(particle.getX(), particle.getY()));
 	}
 	
-	// Place dans la outFreeMatrix la position actuelle de la particule
 	/**
 	 * Set up in the outFreeMatrix the particle position scaled to FluidParticleSimulation.GL_...
 	 * @param i Line's index in outFreeMatrix
 	 * @param x Abscissa of the particle scaled by ParticlesSystem.ENGINE_X
 	 * @param y Ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
 	 */
-	protected void setParticlePosition(int i, Float[] x, Float[] y)
+	protected void setFreeParticlePosition(int index, FreeParticle particle)
 	{
 		for(int j = 0; j < memory; j++)
-			particlesSimulation.getFreeMatrix().setcell2d(j, i, scaleTo(x[j], y[j]));
+			particlesSimulation.getFreeMatrix().setcell2d(j, index, scaleTo(particle.getXHistory().get(j), particle.getYHistory().get(j)));
 	}
 	
 	/**
@@ -239,13 +278,11 @@ public class ParticlesSystem
 			particle.addForce(mouvement[2], mouvement[3]);
 	}
 	
-	private void deleteFree(Particle particle, Float[] mouvement)
+	private void deleteFree(FreeParticle particle, Float[] mouvement)
 	{
 		if(intersect(particle, mouvement[0], mouvement[1]))
-		{
-			particlesFree.remove(particle.getIIndex());
-			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
-		}
+			freeParticlesToDel.add(particle);
+			//particlesFree.remove(particle);
 	}
 	
 	public void addAttractivity(Particle particle, Float[] mouvement)//float posX, float posY)
@@ -272,7 +309,7 @@ public class ParticlesSystem
 	 * @param y Ordinate of the position to add particles scaled by ParticlesSystem.ENGINE_Y
 	 * @param nbToAdd Number of particles to add
 	 */
-	protected void addParticles(float x, float y, int nbToAdd)
+	protected void addFreeParticles(float x, float y, int nbToAdd)
 	{
 		// Si la matrice est pas pleine on ajoute une ligne
 		int diffToMax = maxFreeParticles - particlesFree.size();
@@ -283,7 +320,7 @@ public class ParticlesSystem
 		}
 		
 		for(int i = 0; i < nbToAdd; i++)
-			particlesFree.add(new Particle(getFreeIndex(), x, y, this));
+			particlesFree.add(new FreeParticle(x, y, this));
 	}
 	
 	private int getFreeIndex()
@@ -292,6 +329,15 @@ public class ParticlesSystem
 			particlesFree.remove(0);
 			
 		return (current++ % maxFreeParticles);
+	}
+
+	void loadFreeParticles()
+	{
+		particlesFree.clear();
+		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
+		
+		for(current = 0; current < maxFreeParticles; current++)
+			particlesFree.add(new FreeParticle(this));
 	}
 	
 	/**
@@ -307,7 +353,7 @@ public class ParticlesSystem
 	 * Free particles will be cleared and tied up particles will be restored to initial position
 	 */
 	public void reset() {
-		reloadParticles();
+		reloadGridParticles();
 		particlesFree.clear();
 		particlesSimulation.getFreeMatrix().setDim(new int[]{0, 0});
 		particlesSimulation.getFreeMatrix().clear();
@@ -448,7 +494,7 @@ public class ParticlesSystem
 		xFrom = ParticlesSimulation.computeCoefs(0, nbParticlesW - 1, ENGINE_X[0] + xMargin, ENGINE_X[1] - xMargin);
 		yFrom = ParticlesSimulation.computeCoefs(0, nbParticlesH - 1, ENGINE_Y[0] + yMargin, ENGINE_Y[1] - yMargin);
 		
-		reloadParticles();
+		reloadGridParticles();
 	}
 
 	/**
@@ -517,14 +563,5 @@ public class ParticlesSystem
      */
 	public int getMemory() {
 		return memory;
-	}
-
-	void loadFreeParticles()
-	{
-		particlesFree.clear();
-		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
-		
-		for(current = 0; current < maxFreeParticles; current++)
-			particlesFree.add(new Particle(current, this));
 	}
 }
