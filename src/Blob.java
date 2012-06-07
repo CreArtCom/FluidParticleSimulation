@@ -69,16 +69,34 @@ public class Blob
 	public void Move(float posX, float posY)
 	{
 		float[] norms = scale(posX, posY);
-		deltaX = norms[0] - x;
-		x = norms[0];
+		float dX = norms[0] - x;
+		float dY = norms[1] - y;
+		boolean updated = false;
+		
+		// Le déplacement en X n'est pas inférieur au seuil
+		if(Math.abs(dX) > fluidParticleSimulation.getBlobSeuil())
+		{
+			deltaX = dX;
+			x = norms[0];
+			updated = true;
+		}
 
-		deltaY = norms[1] - y;
-		y = norms[1];
+		// Le déplacement en Y n'est pas inférieur au seuil
+		if(Math.abs(dY) > fluidParticleSimulation.getBlobSeuil())
+		{
+			deltaY = dY;
+			y = norms[1];
+			updated = true;
+		}
 
-		xList.add(x);
-		yList.add(y);
-		deltaXList.add(deltaX);
-		deltaYList.add(deltaY);
+		// L'une des coordonnées au moins a été mise à jour
+		if(updated)
+		{
+			xList.add(x);
+			yList.add(y);
+			deltaXList.add(deltaX);
+			deltaYList.add(deltaY);
+		}
 	}
 	
 	private float[] scale(float posX, float posY)
