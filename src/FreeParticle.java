@@ -37,19 +37,8 @@ public class FreeParticle extends Particle
 	 * Construct a free particle on a random position
 	 * @param particlesSystem Particle's System
 	 */
-	public FreeParticle(ParticlesSystem particlesSystem)
-	{
-		super(particlesSystem);
-		this.particlesSystem = particlesSystem;
-		generator = new Random();
-		
-		this.x = generator.nextFloat();
-        this.y = generator.nextFloat();
-		
-		int memory = particlesSystem.getMemory();
-		this.xHistory = new ArrayList<Float>(memory);
-        this.yHistory = new ArrayList<Float>(memory);
-		changeMemory(memory);
+	public FreeParticle(ParticlesSystem particlesSystem) {
+		this(new Random().nextFloat(), new Random().nextFloat(), particlesSystem);
 	}
 	
 	private void changeMemory(int memory)

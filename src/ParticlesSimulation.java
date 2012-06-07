@@ -26,6 +26,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	protected static String MSG_FREEMAX		= "free_max";
 	protected static String MSG_FREEGEN		= "free_gen";
 	protected static String MSG_FREEERASER	= "free_erase";
+	protected static String MSG_EDGES		= "edges";
 	
 	// Paramètres par défaut
     protected static final float	FLUID_FORCE			= 0.6f;
@@ -211,6 +212,15 @@ public class ParticlesSimulation extends FluidParticleSimulation
 						stepHeight	= 1.f / (float) fluidHeight;
 					}
 
+					else
+						unknownMessage = true;
+				}
+				
+				else if(args.length == 4)
+				{
+					if(message.contentEquals(MSG_EDGES))
+						particlesSystem.setEdges(args[0].toInt(), args[1].toInt(), args[2].toInt(), args[3].toInt());
+					
 					else
 						unknownMessage = true;
 				}

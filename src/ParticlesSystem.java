@@ -11,18 +11,18 @@ import java.util.List;
  */
 public class ParticlesSystem 
 {
-	/** Circle's brush where blob's center is the center */
-	public static final int CIRCLE = 0;
-	
-	/** Rectangle's brush where blob's center is the center */
-	public static final int CENTERED_BOX = 1;
-	
-	/** Rectangle's brush where blob's center is the top-left corner */
-	public static final int CORNERED_BOX = 2;
-
 	// Bornes coordonnées Engine
 	public static final float[] ENGINE_X = {0, 1};
 	public static final float[] ENGINE_Y = {0, 1};
+	
+	public static final int		LEFT_EDGE	= 0;
+	public static final int		BOTTOM_EDGE	= 1;
+	public static final int		RIGHT_EDGE	= 2;
+	public static final int		TOP_EDGE	= 3;
+	
+	public static final int		EDGE_STOP	= 0;
+	public static final int		EDGE_BOUND	= 1;
+	public static final int		EDGE_BOOM	= 2;
 	
     // Paramètres par défaut
     private static final float	SEUIL		= 0.1f;
@@ -51,14 +51,10 @@ public class ParticlesSystem
 
 	protected int		nbParticlesW;
 	protected int		nbParticlesH;
-	protected float		radius2;
-	protected float		boxWidth;
-	protected float		boxHeight;
-	protected float		boxHHeight;
-	protected float		boxHWidth;
-	protected int		brush;
+	protected Brush		brush;
 	protected boolean	applyFluidForce;
 	protected int		current;
+	protected int[]		edgeComportements;
 
 	/**
 	 * Construct a particles' System
@@ -73,13 +69,14 @@ public class ParticlesSystem
 		this.friction			= FRICTION;
 		this.seuil				= SEUIL;
 		this.memory				= MEMORY;
-		this.brush				= CIRCLE;
+		this.brush				= new Brush();
 		this.maxFreeParticles	= MAXFREEPART;
 		this.applyFluidForce	= ParticlesSimulation.FLUID_FORCE_APPLY;
 		this.current			= 0;
 		this.particlesGrid		= new ArrayList<GridParticle>();
 		this.particlesFree		= new ArrayList<FreeParticle>();
 		this.freeParticlesToDel	= new ArrayList<FreeParticle>();
+		this.edgeComportements	= new int[]{EDGE_STOP, EDGE_STOP, EDGE_STOP, EDGE_STOP};
 		
 		// Calcul des coeffs pour l'interpolation GL
 		xTo = ParticlesSimulation.computeCoefs(ENGINE_X, ParticlesSimulation.GL_X);
@@ -225,63 +222,16 @@ public class ParticlesSystem
 	protected void setParticleInitPosition(int i, int j, float initX, float initY) {
 		particlesSimulation.getInitMatrix().setcell2d(i, j, scaleTo(initX, initY));
 	}
-
-	private boolean inCircle(float Cx, float Cy, float pX, float pY)
-	{
-		float A = Cx - pX;
-		float B = Cy - pY; 
-		return ((A*A) + (B*B) <= radius2);
-	}
-	
-	// Rectangle dont C(Cx, Cy) est le centre
-	private boolean inCenteredBox(float Cx, float Cy, float pX, float pY)
-	{
-		return (pX > (Cx - boxHWidth) && pX < (Cx + boxHWidth) && pY > (Cy - boxHHeight) && pY < (Cy + boxHHeight));
-	}
-	
-	// Rectangle dont C(Cx, Cy) est l'angle inférieur gauche
-	private boolean inCorneredBox(float Cx, float Cy, float pX, float pY)
-	{
-		return (pX >= Cx && pX < (Cx + boxWidth) && pY >= Cy && pY < (Cy + boxHeight));
-	}
-	
-	private boolean intersect(Particle particle, float posX, float posY)
-	{
-		switch(brush)
-		{
-			case CIRCLE:// Cercle
-			{
-				if(inCircle(particle.getX(), particle.getY(), posX, posY))
-					return true;
-				break;
-			}
-
-			case CORNERED_BOX:// Rectangle
-			{
-				if(inCorneredBox(particle.getX(), particle.getY(), posX, posY))
-					return true;
-				break;
-			}
-
-			case CENTERED_BOX:// Rectangle
-			{
-				if(inCenteredBox(particle.getX(), particle.getY(), posX, posY))
-					return true;
-				break;
-			}
-		}
-		return false;
-	}
 	
 	private void addForce(Particle particle, Float[] mouvement)
 	{
-		if(intersect(particle, mouvement[0], mouvement[1]))
+		if(brush.intersect(particle, mouvement[0], mouvement[1]))
 			particle.addForce(mouvement[2], mouvement[3]);
 	}
 	
 	private void deleteFree(FreeParticle particle, Float[] mouvement)
 	{
-		if(intersect(particle, mouvement[0], mouvement[1]))
+		if(brush.intersect(particle, mouvement[0], mouvement[1]))
 			freeParticlesToDel.add(particle);
 			//particlesFree.remove(particle);
 	}
@@ -375,7 +325,7 @@ public class ParticlesSystem
 	 * @return The current particle's system
 	 */
 	public ParticlesSystem setCircleRadius(float radius) {
-		this.radius2 = radius * radius;
+		brush.setRadius(radius);
 		return this;
 	}
 
@@ -425,8 +375,7 @@ public class ParticlesSystem
 	 * @return The current particle's system
 	 */
 	public ParticlesSystem setBoxHeight(float height) {
-		this.boxHeight = height;
-		this.boxHHeight = height / 2.f;
+		brush.setBoxHeight(height);
 		return this;
 	}
 
@@ -436,8 +385,7 @@ public class ParticlesSystem
 	 * @return The current particle's system
 	 */
 	public ParticlesSystem setBoxWidth(float width) {
-		this.boxWidth = width;
-		this.boxHWidth = width / 2.f;
+		brush.setBoxWidth(width);
 		return this;
 	}
 	
@@ -500,10 +448,10 @@ public class ParticlesSystem
 
 	/**
 	 * Select which brush to use
-	 * @param brush Index of the brush (use static members)
+	 * @param type Index of the brush (use static members)
 	 */
-	public void setBrush(int brush) {
-		this.brush = brush;
+	public void setBrush(int type) {
+		brush.setType(type);
 	}
 
 	/**
@@ -566,7 +514,7 @@ public class ParticlesSystem
 		return memory;
 	}
 
-	void loadFreeParticles(JitterMatrix jm)
+	public void loadFreeParticles(JitterMatrix jm)
 	{
 		int[] dim = jm.getDim();
 		particlesFree.clear();
@@ -579,5 +527,58 @@ public class ParticlesSystem
 		}
 		
 		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+	}
+	
+	public float getEdgePosition(int edge, float position)
+	{
+		switch(edgeComportements[edge])
+		{
+			case EDGE_STOP:
+				if(edge < RIGHT_EDGE)// Left or bottom
+					return 0.f;
+				else
+					return 1.f;
+
+			case EDGE_BOUND:
+				if(edge < RIGHT_EDGE)// Left or bottom
+					return -position;
+				else
+					return 2.f - position;
+
+			case EDGE_BOOM:
+				if(edge < RIGHT_EDGE)// Left or bottom
+					return 1.f + position;
+				else
+					return 1.f - position;
+				
+			default:
+				return position;
+		}
+	}
+	
+	public int getEdgeVelocity(int edge)
+	{
+		switch(edgeComportements[edge])
+		{
+			case EDGE_STOP:
+				return 0;
+
+			case EDGE_BOUND:
+				return -1;
+
+			case EDGE_BOOM:
+				return 1;
+				
+			default:
+				return 1;
+		}
+	}
+
+	void setEdges(int leftComportement, int bottomComportement, int rightComportement, int topComportement)
+	{
+		edgeComportements[LEFT_EDGE] = leftComportement;
+		edgeComportements[BOTTOM_EDGE] = bottomComportement;
+		edgeComportements[RIGHT_EDGE] = rightComportement;
+		edgeComportements[TOP_EDGE] = topComportement;		
 	}
 }

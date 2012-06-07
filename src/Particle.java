@@ -53,23 +53,39 @@ public abstract class Particle
 		x += Math.abs(vx) > particlesSystem.getSeuil() ? vx : 0;
 		y += Math.abs(vy) > particlesSystem.getSeuil() ? vy : 0;
 		
-		// bounce of edges
+		// Left edge
 		if(x < 0) {
-			x = 0;//x - vx;
-			//vx *= -1;
+			x = particlesSystem.getEdgePosition(ParticlesSystem.LEFT_EDGE, x);
+			vx *= particlesSystem.getEdgeVelocity(ParticlesSystem.LEFT_EDGE);
+			
+//			x = 0;
+//			x = -x;
+//			x = 1 + x;
+//			vx *= -1;
 		}
+		// Right edge
 		else if(x > 1) {
-			x = 1;//(1 - x) - vx;
-			//vx *= -1;
+			x = particlesSystem.getEdgePosition(ParticlesSystem.RIGHT_EDGE, x);
+			vx *= particlesSystem.getEdgeVelocity(ParticlesSystem.RIGHT_EDGE);
+//			x = 1;
+//			x = 2 - x;
+//			x = 1 - x;
+//			vx *= -1;
 		}
 
+		// Bottom edge
 		if(y < 0) {
-			y = 0;//y - vy;
-			//vy *= -1;
+			y = particlesSystem.getEdgePosition(ParticlesSystem.BOTTOM_EDGE, y);
+			vy *= particlesSystem.getEdgeVelocity(ParticlesSystem.BOTTOM_EDGE);
+//			y = -y;
+//			vy *= -1;
 		}
+		// Top edge
 		else if(y > 1) {
-			y = 1;//(1 - y) - vy;
-			//vy *= -1;
+			y = particlesSystem.getEdgePosition(ParticlesSystem.TOP_EDGE, y);
+			vy *= particlesSystem.getEdgeVelocity(ParticlesSystem.TOP_EDGE);
+//			y = 2 - y;//(1 - y) - vy;
+//			vy *= -1;
 		}
 
 		// hackish way to make particles glitter when the slow down a lot
