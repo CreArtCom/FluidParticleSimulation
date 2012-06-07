@@ -1,3 +1,4 @@
+import com.cycling74.jitter.JitterMatrix;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -331,7 +332,7 @@ public class ParticlesSystem
 		return (current++ % maxFreeParticles);
 	}
 
-	void loadFreeParticles()
+	void genFreeParticles()
 	{
 		particlesFree.clear();
 		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
@@ -563,5 +564,20 @@ public class ParticlesSystem
      */
 	public int getMemory() {
 		return memory;
+	}
+
+	void loadFreeParticles(JitterMatrix jm)
+	{
+		int[] dim = jm.getDim();
+		particlesFree.clear();
+		int inf = Math.min(dim[0], maxFreeParticles);
+
+		for(int i = 0; i < inf; i++)
+		{
+			float[] cell = jm.getcell2dFloat(i, 0);
+			particlesFree.add(new FreeParticle(cell[0], cell[1], this));
+		}
+		
+		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
 	}
 }

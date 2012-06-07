@@ -24,7 +24,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 	protected static String MSG_ADDFORCE	= "add_force";
 	protected static String MSG_MEMORY		= "memory";
 	protected static String MSG_FREEMAX		= "free_max";
-	protected static String MSG_FREELOAD	= "free_load";
+	protected static String MSG_FREEGEN		= "free_gen";
 	protected static String MSG_FREEERASER	= "free_erase";
 	
 	// Paramètres par défaut
@@ -60,9 +60,10 @@ public class ParticlesSimulation extends FluidParticleSimulation
     {
 		super(args);
 		
-        // 1 input - 3 outputs
-        declareIO(1, 3);
+        // 2 inputs - 3 outputs
+        declareIO(2, 3);
         setInletAssist(0, "Bang and setting's messages");
+		setInletAssist(1, "Matrix of initials free particles");
         setOutletAssist(0, "Matrix of deplaced points in grid");
 		setOutletAssist(1, "Matrix of initial points' positions in grid");
         setOutletAssist(2, "Matrix of deplaced free points");
@@ -115,105 +116,119 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		
 		if(TreatMessage(message, args))
 		{
-			// Messages de paramétrage
-			if(args.length == 0)
+			if(getInlet() == 0)
 			{
-				if(message.contentEquals(MSG_RESET))
+				// Messages de paramétrage
+				if(args.length == 0)
 				{
-					particlesSystem.reset();
-					outlet(1, MSG_MATRIX, initGridMatrix.getName());
+					if(message.contentEquals(MSG_RESET))
+					{
+						particlesSystem.reset();
+						outlet(1, MSG_MATRIX, initGridMatrix.getName());
+					}
+
+					else if(message.contentEquals(MSG_FREEGEN))
+						particlesSystem.genFreeParticles();
+
+					else
+						unknownMessage = true;
 				}
-				
-				else if(message.contentEquals(MSG_FREELOAD))
-					particlesSystem.loadFreeParticles();
+
+				// Messages de paramétrage
+				else if(args.length == 1)
+				{			
+					if(message.contentEquals(MSG_STIFFNESS))
+						particlesSystem.setStiffness(args[0].toFloat());
+
+					else if(message.contentEquals(MSG_MOMENTUM))
+						particlesSystem.setMomentum(args[0].toFloat());
+
+					else if(message.contentEquals(MSG_FRICTION))
+						particlesSystem.setFriction(args[0].toFloat());
+
+					else if(message.contentEquals(MSG_BLOBRADIUS))
+						particlesSystem.setCircleRadius(args[0].toFloat());
+
+					else if(message.contentEquals(MSG_BLOBWIDTH))
+						particlesSystem.setBoxWidth(args[0].toFloat());
+
+					else if(message.contentEquals(MSG_BLOBHEIGHT))
+						particlesSystem.setBoxHeight(args[0].toFloat());
+
+					else if(message.contentEquals(MSG_BLOBFORM))
+						particlesSystem.setBrush(args[0].toInt());
+
+					else if(message.contentEquals(MSG_FLUIDFORCE))
+						fluidForce = args[0].toFloat();
+
+					else if(message.contentEquals(MSG_FLUIDAPPLY))
+					{
+						fluidSimulation = MaxObject.getContext().getMaxObject("FluidSimulation");
+						applyFluidForce = args[0].toBoolean() && fluidSimulation != null;
+						particlesSystem.setApplyFluidForce(applyFluidForce);
+					}
+
+					else if(message.contentEquals(MSG_PARTSEUIL))
+						particlesSystem.setThreshold(args[0].toFloat());
+
+					else if(message.contentEquals(MSG_ADDPART))
+						particlesToAdd = args[0].toInt();
+
+					else if(message.contentEquals(MSG_ADDFORCE))
+						applyBlobForce = args[0].toBoolean();
+
+					else if(message.contentEquals(MSG_MEMORY))
+						particlesSystem.setMemory(args[0].toInt());
+
+					else if(message.contentEquals(MSG_FREEMAX))
+						particlesSystem.setMaxFreeParticles(args[0].toInt());
+
+					else if(message.contentEquals(MSG_FREEERASER))
+						applyBlobEraser = args[0].toBoolean();
+
+					else
+						unknownMessage = true;
+
+				}
+
+				else if(args.length == 2)
+				{
+					if(message.contentEquals(MSG_NBPARTICLES))
+					{
+						outGridMatrix.setDim(new int[]{args[0].toInt(), args[1].toInt()});
+						initGridMatrix.setDim(new int[]{args[0].toInt(), args[1].toInt()});
+						particlesSystem.setNbParticles(args[0].toInt(), args[1].toInt());
+						outlet(0, MSG_MATRIX, initGridMatrix.getName());
+						outlet(1, MSG_MATRIX, initGridMatrix.getName());
+					}
+
+					else if(message.contentEquals(MSG_FLUIDDIM))
+					{
+						fluidWidth	= args[0].toInt();
+						fluidHeight	= args[1].toInt();
+						fluidCells	= fluidWidth * fluidHeight;
+						stepWidth	= 1.f / (float) fluidWidth;
+						stepHeight	= 1.f / (float) fluidHeight;
+					}
+
+					else
+						unknownMessage = true;
+				}
 
 				else
 					unknownMessage = true;
 			}
-
-			// Messages de paramétrage
-			else if(args.length == 1)
-			{			
-				if(message.contentEquals(MSG_STIFFNESS))
-					particlesSystem.setStiffness(args[0].toFloat());
-
-				else if(message.contentEquals(MSG_MOMENTUM))
-					particlesSystem.setMomentum(args[0].toFloat());
-
-				else if(message.contentEquals(MSG_FRICTION))
-					particlesSystem.setFriction(args[0].toFloat());
-
-				else if(message.contentEquals(MSG_BLOBRADIUS))
-					particlesSystem.setCircleRadius(args[0].toFloat());
-
-				else if(message.contentEquals(MSG_BLOBWIDTH))
-					particlesSystem.setBoxWidth(args[0].toFloat());
-
-				else if(message.contentEquals(MSG_BLOBHEIGHT))
-					particlesSystem.setBoxHeight(args[0].toFloat());
-				
-				else if(message.contentEquals(MSG_BLOBFORM))
-					particlesSystem.setBrush(args[0].toInt());
-
-				else if(message.contentEquals(MSG_FLUIDFORCE))
-					fluidForce = args[0].toFloat();
-
-				else if(message.contentEquals(MSG_FLUIDAPPLY))
-				{
-					fluidSimulation = MaxObject.getContext().getMaxObject("FluidSimulation");
-					applyFluidForce = args[0].toBoolean() && fluidSimulation != null;
-					particlesSystem.setApplyFluidForce(applyFluidForce);
-				}
-
-				else if(message.contentEquals(MSG_PARTSEUIL))
-					particlesSystem.setThreshold(args[0].toFloat());
-				
-				else if(message.contentEquals(MSG_ADDPART))
-					particlesToAdd = args[0].toInt();
-				
-				else if(message.contentEquals(MSG_ADDFORCE))
-					applyBlobForce = args[0].toBoolean();
-				
-				else if(message.contentEquals(MSG_MEMORY))
-					particlesSystem.setMemory(args[0].toInt());
-				
-				else if(message.contentEquals(MSG_FREEMAX))
-					particlesSystem.setMaxFreeParticles(args[0].toInt());
-				
-				else if(message.contentEquals(MSG_FREEERASER))
-					applyBlobEraser = args[0].toBoolean();
-				
-				else
-					unknownMessage = true;
-
-			}
-
-			else if(args.length == 2)
+			else if(getInlet() == 1)
 			{
-				if(message.contentEquals(MSG_NBPARTICLES))
+				if(args.length == 1 && message.contentEquals(MSG_MATRIX))
 				{
-					outGridMatrix.setDim(new int[]{args[0].toInt(), args[1].toInt()});
-					initGridMatrix.setDim(new int[]{args[0].toInt(), args[1].toInt()});
-					particlesSystem.setNbParticles(args[0].toInt(), args[1].toInt());
-					outlet(0, MSG_MATRIX, initGridMatrix.getName());
-					outlet(1, MSG_MATRIX, initGridMatrix.getName());
+					JitterMatrix jm = new JitterMatrix(args[0].toString());
+					particlesSystem.loadFreeParticles(jm);
 				}
-
-				else if(message.contentEquals(MSG_FLUIDDIM))
-				{
-					fluidWidth	= args[0].toInt();
-					fluidHeight	= args[1].toInt();
-					fluidCells	= fluidWidth * fluidHeight;
-					stepWidth	= 1.f / (float) fluidWidth;
-					stepHeight	= 1.f / (float) fluidHeight;
-				}
-
+				
 				else
 					unknownMessage = true;
 			}
-			
-			else
-				unknownMessage = true;
 		}
 		
 		if(unknownMessage)
