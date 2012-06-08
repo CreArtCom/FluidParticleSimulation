@@ -1,6 +1,8 @@
 import com.cycling74.jitter.JitterMatrix;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Semaphore;
 
 /**
  * A particles' System is a mechanical 2D system which contains free and tied up particles.
@@ -55,6 +57,9 @@ public class ParticlesSystem
 	protected boolean	applyFluidForce;
 	protected int		current;
 	protected int[]		edgeComportements;
+	
+	private	Semaphore	freeSemaphore;
+	private	Semaphore	gridSemaphore;
 
 	/**
 	 * Construct a particles' System
@@ -77,6 +82,8 @@ public class ParticlesSystem
 		this.particlesFree		= new ArrayList<FreeParticle>();
 		this.freeParticlesToDel	= new ArrayList<FreeParticle>();
 		this.edgeComportements	= new int[]{EDGE_STOP, EDGE_STOP, EDGE_STOP, EDGE_STOP};
+		this.freeSemaphore		= new Semaphore(1, false);
+		this.gridSemaphore		= new Semaphore(1, false);
 		
 		// Calcul des coeffs pour l'interpolation GL
 		xTo = ParticlesSimulation.computeCoefs(ENGINE_X, ParticlesSimulation.GL_X);
@@ -86,26 +93,36 @@ public class ParticlesSystem
 	/** Update the whole particle's System (each particle position) */
     public void update()
 	{
-		// Si la gomme est active on met à jour les dim de la matrice et la liste de particules
-		if(particlesSimulation.applyBlobEraser() && !freeParticlesToDel.isEmpty())
-		{
-			for(FreeParticle particle:freeParticlesToDel)
-				particlesFree.remove(particle);
-			freeParticlesToDel.clear();
-			
-			particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
-		}
-		
 		// On récupère la liste des blobs dont les coordonnées ont changées
 		List<Float[]> blobsMouvements = particlesSimulation.getBlobsMouvements();
 		
-		// Mise à jour du système de particules libres
-        for(int i = 0; i < particlesFree.size(); i++)
-			updateFreeParticle(i, particlesFree.get(i), blobsMouvements);
+		if(freeSemaphore.tryAcquire())
+		{
+			// Si la gomme est active on met à jour les dim de la matrice et la liste de particules
+			if(particlesSimulation.applyBlobEraser() && !freeParticlesToDel.isEmpty())
+			{
+				for(FreeParticle particle:freeParticlesToDel)
+					particlesFree.remove(particle);
+				freeParticlesToDel.clear();
+
+				particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
+			}
+
+			// Mise à jour du système de particules libres
+			for(int i = 0; i < particlesFree.size(); i++)
+				updateFreeParticle(i, particlesFree.get(i), blobsMouvements);
+			
+			freeSemaphore.release();
+		}
 		
-		// Mise à jour du système de particules liées
-        for(GridParticle p : particlesGrid)
-			updateGridParticle(p, blobsMouvements);
+		if(gridSemaphore.tryAcquire())
+		{
+			// Mise à jour du système de particules liées
+			for(GridParticle p : particlesGrid)
+				updateGridParticle(p, blobsMouvements);
+
+			gridSemaphore.release();
+		}
 		
     }
 	
@@ -169,15 +186,14 @@ public class ParticlesSystem
 	
 	private void reloadGridParticles()
 	{
+		gridSemaphore.acquireUninterruptibly();
 		particlesGrid.clear();
 		
 		for(int i = 0; i < nbParticlesW; i++)
-		{
 			for(int j = 0; j < nbParticlesH; j++)
-			{
 				particlesGrid.add(new GridParticle(i, j, scaleFrom(i, j), this));
-			}
-		}
+
+		gridSemaphore.release();
 	}
 	
 	// [min(initMat);max(initMat)] -> [0;1] pour moteur
@@ -233,17 +249,10 @@ public class ParticlesSystem
 	{
 		if(brush.intersect(particle, mouvement[0], mouvement[1]))
 			freeParticlesToDel.add(particle);
-			//particlesFree.remove(particle);
 	}
-	
-	public void addAttractivity(Particle particle, Float[] mouvement)//float posX, float posY)
-	{
-		/*if(Math.abs(dx) > seuil || Math.abs(dy) > seuil)
-		{
-			for(Particle p : particlesGrid)
-				if(intersect(p, posX, posY))
-					p.applyForce(dx, dy);
-		}*/
+
+	private void addAttractivity(Particle particle, Float[] mouvement) {
+		// Not yet implemented
 	}
 	
 	private void addFluidForce(Particle particle, float[] delta)
@@ -270,17 +279,30 @@ public class ParticlesSystem
 			particlesSimulation.setFreeMatrixDim(memory, particlesFree.size() + realNbToAdd);
 		}
 		
+		freeSemaphore.acquireUninterruptibly();
+
 		for(int i = 0; i < nbToAdd; i++)
+		{
+			if(particlesFree.size() >= maxFreeParticles)
+				particlesFree.remove(0);
 			particlesFree.add(new FreeParticle(x, y, this));
+		}
+
+		freeSemaphore.release();
 	}
 
 	void genFreeParticles()
 	{
-		particlesFree.clear();
+		Random generator = new Random();
 		particlesSimulation.setFreeMatrixDim(memory, maxFreeParticles);
 		
+		freeSemaphore.acquireUninterruptibly();
+		
+		particlesFree.clear();
 		for(current = 0; current < maxFreeParticles; current++)
-			particlesFree.add(new FreeParticle(this));
+			particlesFree.add(new FreeParticle(generator.nextFloat(), generator.nextFloat(), this));
+		
+		freeSemaphore.release();
 	}
 	
 	/**
@@ -299,20 +321,29 @@ public class ParticlesSystem
 	 * Reset the particle system.
 	 * Free particles will be cleared and tied up particles will be restored to initial position
 	 */
-	public void reset() {
+	public void reset()
+	{
+		particlesSimulation.printOut("Reset Grid on: " + nbParticlesW + "x" + nbParticlesH);
+		particlesSimulation.setGridMatrixDim(nbParticlesW, nbParticlesH);
 		reloadGridParticles();
+		
+		freeSemaphore.acquireUninterruptibly();
 		particlesFree.clear();
+		freeSemaphore.release();
+		
 		particlesSimulation.setFreeMatrixDim(0, 0);
-		particlesSimulation.getFreeMatrix().clear();
 		current = 0;
 	}
 
-	/**
-	 * Properly destroy the system.
-	 */
+	/** Properly destroy the system */
 	public void destroy() {
+		gridSemaphore.acquireUninterruptibly();
 		particlesGrid.clear();
+		gridSemaphore.release();
+		
+		freeSemaphore.acquireUninterruptibly();
 		particlesFree.clear();
+		freeSemaphore.release();
 	}
 	
 	/**
@@ -399,7 +430,11 @@ public class ParticlesSystem
 			{
 				// On conserve les maxFreeParticles premières particules
 				if(particlesFree.size() > maxFreeParticles)
+				{
+					freeSemaphore.acquireUninterruptibly();
 					particlesFree = particlesFree.subList(0, maxFreeParticles);
+					freeSemaphore.release();
+				}
 				
 				// On met à jour les dimensions de la matrice
 				particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
@@ -431,6 +466,7 @@ public class ParticlesSystem
 	{
 		this.nbParticlesW	= nbParticlesW;
 		this.nbParticlesH	= nbParticlesH;
+		particlesSimulation.setGridMatrixDim(nbParticlesW, nbParticlesH);
 		
 		if(nbParticlesW > 0 && nbParticlesH > 0)
 		{
@@ -445,7 +481,11 @@ public class ParticlesSystem
 			reloadGridParticles();
 		}
 		else
+		{
+			gridSemaphore.acquireUninterruptibly();
 			particlesGrid.clear();
+			gridSemaphore.release();
+		}
 	}
 
 	/**
@@ -519,14 +559,17 @@ public class ParticlesSystem
 	public void loadFreeParticles(JitterMatrix jm)
 	{
 		int[] dim = jm.getDim();
-		particlesFree.clear();
 		int inf = Math.min(dim[0], maxFreeParticles);
+		
+		freeSemaphore.acquireUninterruptibly();
+		particlesFree.clear();
 
 		for(int i = 0; i < inf; i++)
 		{
 			float[] cell = jm.getcell2dFloat(i, 0);
 			particlesFree.add(new FreeParticle(cell[0], cell[1], this));
 		}
+		freeSemaphore.release();
 		
 		particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
 	}

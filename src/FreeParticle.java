@@ -33,14 +33,6 @@ public class FreeParticle extends Particle
 		changeMemory(memory);
 	}
 	
-	/**
-	 * Construct a free particle on a random position
-	 * @param particlesSystem Particle's System
-	 */
-	public FreeParticle(ParticlesSystem particlesSystem) {
-		this(new Random().nextFloat(), new Random().nextFloat(), particlesSystem);
-	}
-	
 	private void changeMemory(int memory)
 	{
 		xHistory.clear();

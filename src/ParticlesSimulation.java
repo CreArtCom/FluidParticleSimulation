@@ -80,7 +80,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 		outGridMatrix	= new JitterMatrix(2, "float32", 0, 0);
 		outFreeMatrix	= new JitterMatrix(2, "float32", 0, 0);
 		initGridMatrix	= new JitterMatrix(2, "float32", 0, 0);
-		nowhereMatrix	= new JitterMatrix(2, "float32", 1, 1);
+		nowhereMatrix	= new JitterMatrix("nowhere", 2, "float32", 1, 1);
 		nowhereMatrix.setcell2d(0, 0, new float[]{Float.MAX_VALUE, Float.MAX_VALUE});
 		
 		// Initialisation des Attributs
@@ -135,7 +135,9 @@ public class ParticlesSimulation extends FluidParticleSimulation
 					if(message.contentEquals(MSG_RESET))
 					{
 						particlesSystem.reset();
-						outlet(OUTLET_MINIT, MSG_MATRIX, initGridMatrix.getName());
+						
+						if(particlesSystem.hasGridParticles())
+							outlet(OUTLET_MINIT, MSG_MATRIX, initGridMatrix.getName());
 					}
 
 					else if(message.contentEquals(MSG_FREEGEN))
@@ -195,7 +197,12 @@ public class ParticlesSimulation extends FluidParticleSimulation
 						particlesSystem.setMaxFreeParticles(args[0].toInt());
 
 					else if(message.contentEquals(MSG_FREEERASER))
+					{
 						applyBlobEraser = args[0].toBoolean();
+						
+						if(applyBlobEraser && particlesToAdd > 0)
+							error("It does not seem brilliant to add and delete free particles at the same time.");
+					}
 
 					else
 						unknownMessage = true;
@@ -205,10 +212,7 @@ public class ParticlesSimulation extends FluidParticleSimulation
 				else if(args.length == 2)
 				{
 					if(message.contentEquals(MSG_NBPARTICLES))
-					{
-						setGridMatrixDim(args[0].toInt(), args[1].toInt());
 						particlesSystem.setNbParticles(args[0].toInt(), args[1].toInt());
-					}
 
 					else if(message.contentEquals(MSG_FLUIDDIM))
 					{
