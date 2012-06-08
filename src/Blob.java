@@ -68,13 +68,17 @@ public class Blob
 	 */
 	public void Move(float posX, float posY)
 	{
-		float[] norms = scale(posX, posY);
-		float dX = norms[0] - x;
-		float dY = norms[1] - y;
 		boolean updated = false;
+		float[] norms = scale(posX, posY);
+		
+		float dX = norms[0] - x;
+		dX = Math.abs(dX) > fluidParticleSimulation.getBlobSeuilMax() ? (dX / (float)Math.abs(dX) * fluidParticleSimulation.getBlobSeuilMax()) : dX;
+		
+		float dY = norms[1] - y;
+		dY = Math.abs(dY) > fluidParticleSimulation.getBlobSeuilMax() ? (dY / (float)Math.abs(dY) * fluidParticleSimulation.getBlobSeuilMax()) : dY;
 		
 		// Le déplacement en X n'est pas inférieur au seuil
-		if(Math.abs(dX) > fluidParticleSimulation.getBlobSeuil())
+		if(Math.abs(dX) > fluidParticleSimulation.getBlobSeuilMin())
 		{
 			deltaX = dX;
 			x = norms[0];
@@ -82,7 +86,7 @@ public class Blob
 		}
 
 		// Le déplacement en Y n'est pas inférieur au seuil
-		if(Math.abs(dY) > fluidParticleSimulation.getBlobSeuil())
+		if(Math.abs(dY) > fluidParticleSimulation.getBlobSeuilMin())
 		{
 			deltaY = dY;
 			y = norms[1];
@@ -112,7 +116,7 @@ public class Blob
 	 * @return <code>true</code> if the blob's last movements are significants, otherwise <code>false</code>
 	 */
 	public boolean hasMoved() {
-		return xList.size() > 0;//Math.abs(getDeltaX()) > fluidParticleSimulation.getBlobSeuil() || Math.abs(getDeltaY()) > fluidParticleSimulation.getBlobSeuil();
+		return xList.size() > 0;//Math.abs(getDeltaX()) > fluidParticleSimulation.getBlobSeuilMin() || Math.abs(getDeltaY()) > fluidParticleSimulation.getBlobSeuilMin();
 	}
 	
 	/**

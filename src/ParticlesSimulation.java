@@ -181,9 +181,6 @@ public class ParticlesSimulation extends FluidParticleSimulation
 						particlesSystem.setApplyFluidForce(applyFluidForce);
 					}
 
-					else if(message.contentEquals(MSG_PARTSEUIL))
-						particlesSystem.setThreshold(args[0].toFloat());
-
 					else if(message.contentEquals(MSG_ADDPART))
 						particlesToAdd = args[0].toInt();
 
@@ -214,6 +211,9 @@ public class ParticlesSimulation extends FluidParticleSimulation
 					if(message.contentEquals(MSG_NBPARTICLES))
 						particlesSystem.setNbParticles(args[0].toInt(), args[1].toInt());
 
+					else if(message.contentEquals(MSG_PARTSEUIL))
+						particlesSystem.setThreshold(args[0].toFloat(), args[1].toFloat());
+					
 					else if(message.contentEquals(MSG_FLUIDDIM))
 					{
 						fluidWidth	= args[0].toInt();

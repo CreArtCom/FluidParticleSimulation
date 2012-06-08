@@ -27,18 +27,18 @@ public class FluidParticleSimulation extends MaxObject
 	protected static String MSG_RESET		= "reset";
 	
     // Paramètres par défaut
-    protected static final float BLOB_SEUIL		= 0.1f;
-	protected static final float BLOB_FORCE		= 0.5f;
-	protected static final float BLOB_RADIUS	= 0.5f;
-	protected static final float BLOB_WIDTH		= 0.5f;
-	protected static final float BLOB_HEIGHT	= 0.5f;
-	protected static final float[] XCOEFS		= {0.f, 1.f};
-	protected static final float[] YCOEFS		= {0.f, 1.f};	
+    protected static final float[]	BLOB_SEUIL	= {0.01f, 0.1f};
+	protected static final float	BLOB_FORCE	= 0.5f;
+	protected static final float	BLOB_RADIUS	= 0.5f;
+	protected static final float	BLOB_WIDTH	= 0.5f;
+	protected static final float	BLOB_HEIGHT	= 0.5f;
+	protected static final float[]	XCOEFS		= {0.f, 1.f};
+	protected static final float[]	YCOEFS		= {0.f, 1.f};	
 	
 	// Attributs
 	protected Map<Integer, Blob> blobs;
 	protected List<Integer> updatedIndexes;
-	protected float blobSeuil;
+	protected float[] blobSeuil;
 	protected float blobForce;
 	protected float[] xCoefs;
 	protected float[] yCoefs;
@@ -78,10 +78,7 @@ public class FluidParticleSimulation extends MaxObject
         // Messages de paramétrage
         if(args.length == 1)
         {
-			if(message.contentEquals(MSG_BLOBSEUIL))
-                blobSeuil = args[0].toFloat();
-			
-			else if(message.contentEquals(MSG_BLOBFORCE))
+			if(message.contentEquals(MSG_BLOBFORCE))
                 blobForce = args[0].toFloat();
 			
 			else
@@ -95,6 +92,9 @@ public class FluidParticleSimulation extends MaxObject
 			
 			else if(message.contentEquals(MSG_YSCALE))
 				yCoefs = computeCoefs(args[0].toFloat(), args[1].toFloat(), ParticlesSystem.ENGINE_Y);
+			
+			else if(message.contentEquals(MSG_BLOBSEUIL))
+                blobSeuil = new float[]{args[0].toFloat(), args[1].toFloat()};
 			
 			else
 				unknownMessage = true;
@@ -193,12 +193,21 @@ public class FluidParticleSimulation extends MaxObject
 	/********************************* GETTERS *********************************/
 	
 	/**
-	 * Getter : blobSeuil
-	 * @return	La valeur du seuil minimal de détection du mouvement d'un blob
+	 * Getter : blobSeuilMin
+	 * @return	La valeur du seuil minimal de détection du mouvement d'un blob en une itération
      * @since	1.0
      */
-	public float getBlobSeuil() {
-		return blobSeuil;
+	public float getBlobSeuilMin() {
+		return blobSeuil[0];
+	}
+	
+	/**
+	 * Getter : blobSeuilMax
+	 * @return	La valeur du seuil maximal de mouvement d'un blob en une itération
+     * @since	1.0
+     */
+	public float getBlobSeuilMax() {
+		return blobSeuil[1];
 	}
 
 	/**

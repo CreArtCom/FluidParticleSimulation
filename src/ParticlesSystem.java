@@ -27,26 +27,26 @@ public class ParticlesSystem
 	public static final int		EDGE_BOOM	= 2;
 	
     // Paramètres par défaut
-    private static final float	SEUIL		= 0.1f;
-	private static final float	MOMENTUM	= 0.05f;
-	private static final float	STIFFNESS	= 0.5f;
-	private static final float	FRICTION	= 0.1f;
-	private static final int	MEMORY		= 2;
-	private static final int	MAXFREEPART	= 1000;
+    private static final float[]	SEUIL		= {0.001f, 0.1f};
+	private static final float		MOMENTUM	= 0.05f;
+	private static final float		STIFFNESS	= 0.5f;
+	private static final float		FRICTION	= 0.1f;
+	private static final int		MEMORY		= 2;
+	private static final int		MAXFREEPART	= 1000;
 
 	
 	// Coefficients pour interpolation (linear scale)
 	private float[] xFrom, yFrom;
 	private float[] xTo, yTo;
 	
-	protected float	stiffness;
-	protected float	momentum;
-	protected float	friction;
-	protected float	seuil;
-	protected int	memory;
-	protected int	maxFreeParticles;
-	protected List<FreeParticle> freeParticlesToDel;
+	protected float		stiffness;
+	protected float		momentum;
+	protected float		friction;
+	protected float[]	seuil;
+	protected int		memory;
+	protected int		maxFreeParticles;
 	
+	private List<FreeParticle> freeParticlesToDel;
     private List<GridParticle> particlesGrid;
 	private List<FreeParticle> particlesFree;
     private ParticlesSimulation particlesSimulation;
@@ -257,7 +257,7 @@ public class ParticlesSystem
 	
 	private void addFluidForce(Particle particle, float[] delta)
 	{
-		if(Math.abs(delta[0]) > seuil || Math.abs(delta[1]) > seuil)
+		if(Math.abs(delta[0]) > seuil[0] || Math.abs(delta[1]) > seuil[0])
 		{
 			particle.applyForce(delta[0], delta[1]);
 		}
@@ -323,7 +323,6 @@ public class ParticlesSystem
 	 */
 	public void reset()
 	{
-		particlesSimulation.printOut("Reset Grid on: " + nbParticlesW + "x" + nbParticlesH);
 		particlesSimulation.setGridMatrixDim(nbParticlesW, nbParticlesH);
 		reloadGridParticles();
 		
@@ -361,8 +360,8 @@ public class ParticlesSystem
 	 * @param threshold New threshold
 	 * @return The current particle's system
 	 */
-	public ParticlesSystem setThreshold(float threshold) {
-		this.seuil = threshold;
+	public ParticlesSystem setThreshold(float minThreshold, float maxThreshold) {
+		this.seuil = new float[]{minThreshold, maxThreshold};
 		return this;
 	}
 	
@@ -537,13 +536,22 @@ public class ParticlesSystem
 	}
 	
 	/**
-	 * Getter : seuil
+	 * Getter : seuilMin
 	 * @return	Seuil en deça duquel les particules du système seront 
 	 *			considérées comme immobiles.
      * @since	1.0
      */
-	float getSeuil() {
-		return seuil;
+	float getSeuilMin() {
+		return seuil[0];
+	}
+	
+	/**
+	 * Getter : seuilMax
+	 * @return	Seuil au dessus duquel les particules du système seront limités.
+     * @since	1.0
+     */
+	float getSeuilMax() {
+		return seuil[1];
 	}
 
 	/**

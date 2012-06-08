@@ -50,8 +50,13 @@ public abstract class Particle
 	// On met à jour la position
 	protected void updatePosition()
 	{
-		x += Math.abs(vx) > particlesSystem.getSeuil() ? vx : 0;
-		y += Math.abs(vy) > particlesSystem.getSeuil() ? vy : 0;
+		vx = Math.abs(vx) < particlesSystem.getSeuilMax() ? vx : (vx / (float)Math.abs(vx) * particlesSystem.getSeuilMax());
+		vy = Math.abs(vy) < particlesSystem.getSeuilMax() ? vy : (vy / (float)Math.abs(vy) * particlesSystem.getSeuilMax());
+		vx = Math.abs(vx) > particlesSystem.getSeuilMin() ? vx : 0.f;
+		vy = Math.abs(vy) > particlesSystem.getSeuilMin() ? vy : 0.f;
+		
+		x += vx;
+		y += vy;
 		
 		// Left edge
 		if(x < 0) {
