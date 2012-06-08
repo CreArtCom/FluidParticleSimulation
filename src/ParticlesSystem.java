@@ -93,7 +93,7 @@ public class ParticlesSystem
 				particlesFree.remove(particle);
 			freeParticlesToDel.clear();
 			
-			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+			particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
 		}
 		
 		// On récupère la liste des blobs dont les coordonnées ont changées
@@ -267,25 +267,17 @@ public class ParticlesSystem
 		if(diffToMax > 0)
 		{
 			int realNbToAdd = diffToMax > nbToAdd ? nbToAdd : diffToMax;
-			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size() + realNbToAdd});
+			particlesSimulation.setFreeMatrixDim(memory, particlesFree.size() + realNbToAdd);
 		}
 		
 		for(int i = 0; i < nbToAdd; i++)
 			particlesFree.add(new FreeParticle(x, y, this));
 	}
-	
-	private int getFreeIndex()
-	{
-		if(particlesFree.size() >= maxFreeParticles)
-			particlesFree.remove(0);
-			
-		return (current++ % maxFreeParticles);
-	}
 
 	void genFreeParticles()
 	{
 		particlesFree.clear();
-		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, maxFreeParticles});
+		particlesSimulation.setFreeMatrixDim(memory, maxFreeParticles);
 		
 		for(current = 0; current < maxFreeParticles; current++)
 			particlesFree.add(new FreeParticle(this));
@@ -296,7 +288,11 @@ public class ParticlesSystem
 	 * @return <code>true</code> if at least one tied up particle exists, <code>false</code> otherwise
 	 */
 	public boolean hasGridParticles() {
-		return nbParticlesW > 0 && nbParticlesH > 0;
+		return !particlesGrid.isEmpty();
+	}
+	
+	public boolean hasFreeParticles() {
+		return !particlesFree.isEmpty();
 	}
 
 	/**
@@ -306,7 +302,7 @@ public class ParticlesSystem
 	public void reset() {
 		reloadGridParticles();
 		particlesFree.clear();
-		particlesSimulation.getFreeMatrix().setDim(new int[]{0, 0});
+		particlesSimulation.setFreeMatrixDim(0, 0);
 		particlesSimulation.getFreeMatrix().clear();
 		current = 0;
 	}
@@ -406,7 +402,7 @@ public class ParticlesSystem
 					particlesFree = particlesFree.subList(0, maxFreeParticles);
 				
 				// On met à jour les dimensions de la matrice
-				particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+				particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
 			}
 
 			this.maxFreeParticles = maxFreeParticles;
@@ -422,7 +418,7 @@ public class ParticlesSystem
 		if(memory > 0)
 		{
 			this.memory = memory;
-			particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+			particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
 		}
 	}
 
@@ -431,19 +427,25 @@ public class ParticlesSystem
 	 * @param nbParticlesW Width of the grid
 	 * @param nbParticlesH Height of the grid
 	 */
-	public void setNbParticles(int nbParticlesW, int nbParticlesH) {
+	public void setNbParticles(int nbParticlesW, int nbParticlesH)
+	{
 		this.nbParticlesW	= nbParticlesW;
 		this.nbParticlesH	= nbParticlesH;
 		
-		// Calcul des marges pour centrer les particules dans l'Engine
-		float xMargin = (1.f / (float)(nbParticlesW + 1)) * (ENGINE_X[1] - ENGINE_X[0]);
-		float yMargin = (1.f / (float)(nbParticlesH + 1)) * (ENGINE_Y[1] - ENGINE_Y[0]);
-		
-		// Calcul des coeffs pour l'interpolation Engine
-		xFrom = ParticlesSimulation.computeCoefs(0, nbParticlesW - 1, ENGINE_X[0] + xMargin, ENGINE_X[1] - xMargin);
-		yFrom = ParticlesSimulation.computeCoefs(0, nbParticlesH - 1, ENGINE_Y[0] + yMargin, ENGINE_Y[1] - yMargin);
-		
-		reloadGridParticles();
+		if(nbParticlesW > 0 && nbParticlesH > 0)
+		{
+			// Calcul des marges pour centrer les particules dans l'Engine
+			float xMargin = (1.f / (float)(nbParticlesW + 1)) * (ENGINE_X[1] - ENGINE_X[0]);
+			float yMargin = (1.f / (float)(nbParticlesH + 1)) * (ENGINE_Y[1] - ENGINE_Y[0]);
+
+			// Calcul des coeffs pour l'interpolation Engine
+			xFrom = ParticlesSimulation.computeCoefs(0, nbParticlesW - 1, ENGINE_X[0] + xMargin, ENGINE_X[1] - xMargin);
+			yFrom = ParticlesSimulation.computeCoefs(0, nbParticlesH - 1, ENGINE_Y[0] + yMargin, ENGINE_Y[1] - yMargin);
+			
+			reloadGridParticles();
+		}
+		else
+			particlesGrid.clear();
 	}
 
 	/**
@@ -526,7 +528,7 @@ public class ParticlesSystem
 			particlesFree.add(new FreeParticle(cell[0], cell[1], this));
 		}
 		
-		particlesSimulation.getFreeMatrix().setDim(new int[]{memory, particlesFree.size()});
+		particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
 	}
 	
 	public float getEdgePosition(int edge, float position)
@@ -576,9 +578,9 @@ public class ParticlesSystem
 
 	void setEdges(int leftComportement, int bottomComportement, int rightComportement, int topComportement)
 	{
-		edgeComportements[LEFT_EDGE] = leftComportement;
-		edgeComportements[BOTTOM_EDGE] = bottomComportement;
-		edgeComportements[RIGHT_EDGE] = rightComportement;
-		edgeComportements[TOP_EDGE] = topComportement;		
+		edgeComportements[LEFT_EDGE]	= leftComportement;
+		edgeComportements[BOTTOM_EDGE]	= bottomComportement;
+		edgeComportements[RIGHT_EDGE]	= rightComportement;
+		edgeComportements[TOP_EDGE]		= topComportement;		
 	}
 }
