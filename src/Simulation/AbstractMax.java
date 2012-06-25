@@ -10,11 +10,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * AbstractMax is a MaxObject's abstraction that provide basic stuffs and blobs 
+ * system for it's children. 
+ * Please note that AbstractMax is an abstract class and each children will be 
+ * an instantiable Max Object.
+ * 
  * @author	CreArtCom's Studio
  * @author	Léo LEFEBVRE
  * @version	1.0
  */
-public class AbstractMax extends MaxObject
+public abstract class AbstractMax extends MaxObject
 {
 	// Bornes coordonnées GL
 	public static float[] GL_X = {-1.f, 1.f};
@@ -122,27 +127,59 @@ public class AbstractMax extends MaxObject
 		
 		return unknownMessage;
     }
-		
-	protected void applyBlob(int index, float posX, float posY) {
-		// Doit être surchargée
-	}
 	
-	// Alias
+	/**
+	 * Define whatever to do when a blob occurs.
+	 * Abstract : Must be overrode
+	 * @param index Blob's index
+	 * @param posX X Position on which blob occurs
+	 * @param posY Y Position on which blob occurs
+	 */
+	protected abstract void applyBlob(int index, float posX, float posY);
+	
+	/**
+	 * Alias : computeCoefs()
+	 * @param from original interval
+	 * @param to  destination interval
+	 * @return A and B coefficients
+	 * @see computeCoefs()
+	 */
 	public static float[] computeCoefs(float[] from, float[] to) {
 		return computeCoefs(from[0], from[1], to[0], to[1]);
 	}
 	
-	// Alias
+	/**
+	 * Alias : computeCoefs()
+	 * @param minFrom Lower bound of original interval
+	 * @param maxFrom Higher bound of original interval
+	 * @param to  destination interval
+	 * @return A and B coefficients
+	 * @see computeCoefs()
+	 */
 	public static float[] computeCoefs(float minFrom, float maxFrom, float[] to) {
 		return computeCoefs(minFrom, maxFrom, to[0], to[1]);
 	}
 
-	// Alias
+	/**
+	 * Alias : computeCoefs()
+	 * @param from original interval
+	 * @param minTo Lower bound of destination interval
+	 * @param maxTo Higher bound of destination interval
+	 * @return A and B coefficients
+	 * @see computeCoefs()
+	 */
 	public static float[] computeCoefs(float[] from, float minTo, float maxTo) {
 		return computeCoefs(from[0], from[1], minTo, maxTo);
 	}
 	
-	// Calcule les coefs A et B dans y = A * x + B pour un scale linéaire
+	/**
+	 * Computes A and B coefficients for a 1D linear scale (Y = A * X + B)
+	 * @param minFrom Lower bound of original interval
+	 * @param maxFrom Higher bound of original interval
+	 * @param minTo Lower bound of destination interval
+	 * @param maxTo Higher bound of destination interval
+	 * @return A and B coefficients
+	 */
 	public static float[] computeCoefs(float minFrom, float maxFrom, float minTo, float maxTo) {
 		float A, B;
 		
@@ -168,7 +205,12 @@ public class AbstractMax extends MaxObject
 		return new float[]{A, B};
 	}
 	
-	public List<Blob> getUpdatedBlobs()
+	/**
+	 * Getter : UpdatedBlobs
+	 * @return	A list of all blobs that have moved since the last call
+     * @since	1.0
+     */
+	protected List<Blob> getUpdatedBlobs()
 	{
 		List<Blob> result = new ArrayList<Blob>();
 		
@@ -184,6 +226,11 @@ public class AbstractMax extends MaxObject
 		return result;
 	}
 	
+	/**
+	 * Getter : blobMouvements
+	 * @return	A list of all blob's mouvements since last UpdatedBlobs() call
+     * @since	1.0
+     */
 	public List<Float[]> getBlobsMouvements()
 	{
 		List<Float[]> result = new ArrayList<Float[]>();
@@ -193,8 +240,6 @@ public class AbstractMax extends MaxObject
 		
 		return result;
 	}
-	
-	/********************************* GETTERS *********************************/
 	
 	/**
 	 * Getter : blobSeuilMin

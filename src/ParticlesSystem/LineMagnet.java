@@ -1,7 +1,7 @@
 package ParticlesSystem;
 
 
-import Utils.Vector;
+import Utils.Vector3;
 
 /**
  * A line magnet is a magnet materialized by an infinite line.
@@ -17,8 +17,8 @@ public class LineMagnet extends Magnet
 	protected float b;
 	protected float c;
 	
-	protected Vector normal;
-	protected Vector dir;
+	protected Vector3 normal;
+	protected Vector3 dir;
 	
 	protected float a2;
 	protected float b2;
@@ -35,8 +35,8 @@ public class LineMagnet extends Magnet
         this.b = b;
 		this.c = c;
 		
-		normal = new Vector(a, b).Normalise();
-		dir = new Vector(-b, a).Normalise();
+		normal = new Vector3(a, b).Normalise();
+		dir = new Vector3(-b, a).Normalise();
 		
 		a2 = a * a;
 		b2 = b * b;
