@@ -1,0 +1,127 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"><HTML><HEAD>
+<META content="text/html; charset=UTF-8" http-equiv="Content-Type"><LINK rel="stylesheet" 
+type="text/css" href="Fluid%20Simulation%20Reference_xml_fichiers/_c74_common.css">
+<TITLE>Fluid Simulation Reference</TITLE>
+<SCRIPT src=""></SCRIPT>
+
+<META name="GENERATOR" content="MSHTML 9.00.8112.16447"></HEAD>
+<BODY>
+<H1>Fluid Simulation</H1>
+<P class="digest"> Messages and attributes common to Fluid Simulation operators 
+</P>
+<H2>Description</H2>
+<DIV id="argument_section">
+<H2>Arguments</H2>
+<DIV class="description">None.</DIV></DIV>
+<DIV id="method_section">
+<H2>Messages</H2>
+<TABLE>
+  <TBODY>
+  <TR class="row_odd">
+    <TD>bang</TD>
+    <TD></TD>
+    <TD class="description"> Computes fluids forces and colors and output the 
+      result matrix. </TD></TR>
+  <TR class="row_even">
+    <TD>blob</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">x      [float32]      <BR></SPAN><SPAN class="arglist_arg">y 
+           [float32]      <BR></SPAN></TD>
+    <TD class="description"> Notify the new position of the blob identified by 
+      its index. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_apply_force</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">apply      [int]      <BR></SPAN></TD>
+    <TD class="description"> Determine if force (push) have to be applied on 
+      particles for the blob identified by its index. </TD></TR>
+  <TR class="row_even">
+    <TD>blob_force</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">force      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the force (push) of the blob identified by 
+      its index. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_info</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN></TD>
+    <TD class="description"> Output some informations about the blob 
+      identified by its index (fourth outlet). </TD></TR>
+  <TR class="row_even">
+    <TD>blob_list</TD>
+    <TD></TD>
+    <TD class="description"> Output all existing index of blobs (fourth 
+      outlet). </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_reset</TD>
+    <TD></TD>
+    <TD class="description"> Remove all blobs. </TD></TR>
+  <TR class="row_even">
+    <TD>blob_seuil</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">min      [float32]      <BR></SPAN><SPAN class="arglist_arg">max 
+           [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the threshold of every blobs' mouvements. 
+      Mouvements under the min value will be considered null, and mouvements 
+      upper the max value will be replaced by this value. </TD></TR>
+  <TR class="row_odd">
+    <TD>color</TD>
+    <TD></TD>
+    <TD class="description"> Set a fixed color. </TD></TR>
+  <TR class="row_even">
+    <TD>deltaT</TD>
+    <TD></TD>
+    <TD class="description"> Set the deltaT value of the fluid solver. See 
+      more on MSAFluidSolver2D's doc. </TD></TR>
+  <TR class="row_odd">
+    <TD>fade_speed</TD>
+    <TD></TD>
+    <TD class="description"> Set the fadeSpeed value of the fluid solver. See 
+      more on MSAFluidSolver2D's doc. </TD></TR>
+  <TR class="row_even">
+    <TD>fluid_dim</TD>
+    <TD></TD>
+    <TD class="description"> Set the dimension of the fluid solver. See more 
+      on MSAFluidSolver2D's doc. </TD></TR>
+  <TR class="row_odd">
+    <TD>iterations</TD>
+    <TD></TD>
+    <TD class="description"> Set the number of iterations of the fluid solver. 
+      See more on MSAFluidSolver2D's doc. </TD></TR>
+  <TR class="row_even">
+    <TD>no_color</TD>
+    <TD></TD>
+    <TD class="description"> Enable or Disable the use of color (forces are 
+      always used). 0 = color, 1 = no color </TD></TR>
+  <TR class="row_odd">
+    <TD>random_color</TD>
+    <TD></TD>
+    <TD class="description"> Enable or Disable the use of a random color. 0 = 
+      fixed, 1 = random </TD></TR>
+  <TR class="row_even">
+    <TD>reset</TD>
+    <TD></TD>
+    <TD class="description"> Reset the system. All values will be set as 
+      default. </TD></TR>
+  <TR class="row_odd">
+    <TD>velocity</TD>
+    <TD></TD>
+    <TD class="description"> Set the velocity value of the fluid solver. See 
+      more on MSAFluidSolver2D's doc. </TD></TR>
+  <TR class="row_even">
+    <TD>viscosity</TD>
+    <TD></TD>
+    <TD class="description"> Set the viscosity value of the fluid solver. See 
+      more on MSAFluidSolver2D's doc. </TD></TR>
+  <TR class="row_odd">
+    <TD>x_scale</TD>
+    <TD><SPAN class="arglist_arg">min      [float32]      <BR></SPAN><SPAN 
+      class="arglist_arg">max      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the range of x values for input blob's 
+      coordinates. </TD></TR>
+  <TR class="row_even">
+    <TD>y_scale</TD>
+    <TD><SPAN class="arglist_arg">min      [float32]      <BR></SPAN><SPAN 
+      class="arglist_arg">max      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the range of y values for input blob's 
+      coordinates. </TD></TR></TBODY></TABLE></DIV></BODY></HTML>

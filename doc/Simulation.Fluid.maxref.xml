@@ -1,0 +1,213 @@
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object box="0" name="Fluid Simulation" category="Unlisted">
+	<digest>
+		Messages and attributes common to Fluid Simulation operators
+	</digest>
+	<description>
+
+	</description>
+	<!--METADATA -->
+	<metadatalist>
+		<metadata name="author">
+			CreArtCom
+		</metadata>
+	</metadatalist>
+	<inletlist />
+	<outletlist />
+	<!--ARGUMENTS-->
+	<objarglist>
+	</objarglist>
+	<!-- ===================================================
+      METHODS
+  =================================================== -->
+	<methodlist>
+		<method name="bang">
+			<digest>
+			</digest>
+			<description>
+				Computes fluids forces and colors and output the result matrix.
+			</description>
+		</method>
+		<method name="blob">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="x" type="float32" />
+				<arg name="y" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Notify the new position of the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_apply_force">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="apply" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Determine if force (push) have to be applied on particles for the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_force">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the force (push) of the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_info">
+			<arglist>
+				<arg name="index" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Output some informations about the blob identified by its index (fourth outlet).
+			</description>
+		</method>
+		<method name="blob_list">
+			<arglist>
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Output all existing index of blobs (fourth outlet).
+			</description>
+		</method>
+		<method name="blob_reset">
+			<arglist>
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Remove all blobs.
+			</description>
+		</method>
+		<method name="blob_seuil">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="min" type="float32" />
+				<arg name="max" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the threshold of every blobs' mouvements. Mouvements under the min value will be considered null, and mouvements upper the max value will be replaced by this value.
+			</description>
+		</method>
+		<method name="color">
+			<digest>
+				<arg name="red" type="int" />
+				<arg name="green" type="int" />
+				<arg name="blue" type="int" />
+			</digest>
+			<description>
+				Set a fixed color.
+			</description>
+		</method>
+		<method name="deltaT">
+			<digest>
+				<arg name="deltaT" type="float32" />
+			</digest>
+			<description>
+				Set the deltaT value of the fluid solver. See more on MSAFluidSolver2D's doc.
+			</description>
+		</method>
+		<method name="fade_speed">
+			<digest>
+				<arg name="fadeSpeed" type="float32" />
+			</digest>
+			<description>
+				Set the fadeSpeed value of the fluid solver. See more on MSAFluidSolver2D's doc.
+			</description>
+		</method>
+		<method name="fluid_dim">
+			<digest>
+				<arg name="width" type="int" />
+				<arg name="height" type="int" />
+			</digest>
+			<description>
+				Set the dimension of the fluid solver. See more on MSAFluidSolver2D's doc.
+			</description>
+		</method>
+		<method name="iterations">
+			<digest>
+				<arg name="number" type="int" />
+			</digest>
+			<description>
+				Set the number of iterations of the fluid solver. See more on MSAFluidSolver2D's doc.
+			</description>
+		</method>
+		<method name="no_color">
+			<digest>
+				<arg name="enable" type="int" />
+			</digest>
+			<description>
+				Enable or Disable the use of color (forces are always used). 0 = color, 1 = no color
+			</description>
+		</method>
+		<method name="random_color">
+			<digest>
+				<arg name="enable" type="int" />
+			</digest>
+			<description>
+				Enable or Disable the use of a random color. 0 = fixed, 1 = random
+			</description>
+		</method>
+		<method name="reset">
+			<arglist>
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Reset the system. All values will be set as default.
+			</description>
+		</method>
+		<method name="velocity">
+			<digest>
+				<arg name="velocity" type="float32" />
+			</digest>
+			<description>
+				Set the velocity value of the fluid solver. See more on MSAFluidSolver2D's doc.
+			</description>
+		</method>
+		<method name="viscosity">
+			<digest>
+				<arg name="viscosity" type="float32" />
+			</digest>
+			<description>
+				Set the viscosity value of the fluid solver. See more on MSAFluidSolver2D's doc.
+			</description>
+		</method>
+		<method name="x_scale">
+			<arglist>
+				<arg name="min" type="float32" />
+				<arg name="max" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the range of x values for input blob's coordinates.
+			</description>
+		</method>
+		<method name="y_scale">
+			<arglist>
+				<arg name="min" type="float32" />
+				<arg name="max" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the range of y values for input blob's coordinates.
+			</description>
+		</method>
+	</methodlist>
+</c74object>

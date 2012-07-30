@@ -1,0 +1,248 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"><HTML><HEAD>
+<META content="text/html; charset=UTF-8" http-equiv="Content-Type"><LINK rel="stylesheet" 
+type="text/css" href="Particle%20Simulation%20Reference_xml_fichiers/_c74_common.css">
+<TITLE>Particle Simulation Reference</TITLE>
+<SCRIPT src=""></SCRIPT>
+
+<META name="GENERATOR" content="MSHTML 9.00.8112.16447"></HEAD>
+<BODY>
+<H1>Particle Simulation</H1>
+<P class="digest"> Messages and attributes common to Particle Simulation 
+operators </P>
+<H2>Description</H2>
+<DIV id="argument_section">
+<H2>Arguments</H2>
+<DIV class="description">None.</DIV></DIV>
+<DIV id="method_section">
+<H2>Messages</H2>
+<TABLE>
+  <TBODY>
+  <TR class="row_odd">
+    <TD>bang</TD>
+    <TD></TD>
+    <TD class="description"> Computes particles positions and output the 
+      result matrix. </TD></TR>
+  <TR class="row_even">
+    <TD>blob</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">x      [float32]      <BR></SPAN><SPAN class="arglist_arg">y 
+           [float32]      <BR></SPAN></TD>
+    <TD class="description"> Notify the new position of the blob identified by 
+      its index. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_add</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">nbToAdd      [int]      <BR></SPAN></TD>
+    <TD class="description"> Set the "number to add" value of the blob 
+      identified by its index. In this context, this is number of particles to 
+      add on every blob emergence. </TD></TR>
+  <TR class="row_even">
+    <TD>blob_apply_attractivity</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">apply      [int]      <BR></SPAN></TD>
+    <TD class="description"> Determine if attractive force have to be applied 
+      on particles for the blob identified by its index. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_apply_eraser</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">apply      [int]      <BR></SPAN></TD>
+    <TD class="description"> Determine if particles in the blob identified by 
+      its index have to be erased. </TD></TR>
+  <TR class="row_even">
+    <TD>blob_apply_force</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">apply      [int]      <BR></SPAN></TD>
+    <TD class="description"> Determine if force (push) have to be applied on 
+      particles for the blob identified by its index. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_attractive_force</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">force      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the value of attractive force. Attractive 
+      force is a blob as a point magnet. </TD></TR>
+  <TR class="row_even">
+    <TD>blob_brush</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">brush_index      [int]      <BR></SPAN></TD>
+    <TD class="description"> Set the brush attached to the blob identified by 
+      its index. 0 = circle, 1 = rectangle. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_circle</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">radius      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the radius of the circle brush of the blob 
+      identified by its index. </TD></TR>
+  <TR class="row_even">
+    <TD>blob_force</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">force      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the force (push) of the blob identified by 
+      its index. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_info</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN></TD>
+    <TD class="description"> Output some informations about the blob 
+      identified by its index (fourth outlet). </TD></TR>
+  <TR class="row_even">
+    <TD>blob_list</TD>
+    <TD></TD>
+    <TD class="description"> Output all existing index of blobs (fourth 
+      outlet). </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_rectangle</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">width      [float32]      <BR></SPAN><SPAN class="arglist_arg">height 
+           [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the width and the height of the rectangle 
+      brush of the blob identified by its index. </TD></TR>
+  <TR class="row_even">
+    <TD>blob_reset</TD>
+    <TD></TD>
+    <TD class="description"> Remove all blobs. </TD></TR>
+  <TR class="row_odd">
+    <TD>blob_seuil</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">min      [float32]      <BR></SPAN><SPAN class="arglist_arg">max 
+           [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the threshold of every blobs' mouvements. 
+      Mouvements under the min value will be considered null, and mouvements 
+      upper the max value will be replaced by this value. </TD></TR>
+  <TR class="row_even">
+    <TD>edges</TD>
+    <TD><SPAN class="arglist_arg">left      [float32]      <BR></SPAN><SPAN 
+      class="arglist_arg">bottom      [float32]      <BR></SPAN><SPAN class="arglist_arg">right 
+           [float32]      <BR></SPAN><SPAN class="arglist_arg">top      
+      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the comportement of the edges. (Edges are 
+      borders of the window) </TD></TR>
+  <TR class="row_odd">
+    <TD>fluid_apply</TD>
+    <TD><SPAN class="arglist_arg">apply      [int]      <BR></SPAN></TD>
+    <TD class="description"> Determine if fluid's mouvements are applied on 
+      particles. 1 = Enable, 0 = Disable </TD></TR>
+  <TR class="row_even">
+    <TD>fluid_force</TD>
+    <TD><SPAN class="arglist_arg">force      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the value force of the fluid on particles. 
+      This coeficient weight fluids' mouvements. </TD></TR>
+  <TR class="row_odd">
+    <TD>friction</TD>
+    <TD><SPAN class="arglist_arg">friction      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the value of the friction of every particles. 
+    </TD></TR>
+  <TR class="row_even">
+    <TD>magnet_apply</TD>
+    <TD><SPAN class="arglist_arg">apply      [int]      <BR></SPAN></TD>
+    <TD class="description"> Determine if magnets are applied on particles. 1 
+      = Enable, 0 = Disable </TD></TR>
+  <TR class="row_odd">
+    <TD>magnet_delete</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">delete      [int]      <BR></SPAN></TD>
+    <TD class="description"> Delete a magnet identified by its index. </TD></TR>
+  <TR class="row_even">
+    <TD>magnet_force</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">force      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the force of the magnet identified by its 
+      index. Use index "-1" for apply on every magnets. </TD></TR>
+  <TR class="row_odd">
+    <TD>magnet_hline</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">constant      [float32]      <BR></SPAN><SPAN class="arglist_arg">force 
+           [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the magnet of the given index as a horizontal 
+      line (x = constant) with the given force. If the index didn't exist, it 
+      will be created, otherwise, it will be erased. </TD></TR>
+  <TR class="row_even">
+    <TD>magnet_info</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN></TD>
+    <TD class="description"> Output some informations about the magnet 
+      identified by its index (third output). </TD></TR>
+  <TR class="row_odd">
+    <TD>magnet_line</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">x1      [float32]      <BR></SPAN><SPAN class="arglist_arg">y1 
+           [float32]      <BR></SPAN><SPAN class="arglist_arg">x2      [float32] 
+           <BR></SPAN><SPAN class="arglist_arg">y2      [float32]      
+      <BR></SPAN><SPAN class="arglist_arg">force      [float32]      
+    <BR></SPAN></TD>
+    <TD class="description"> Set the magnet of the given index as a line 
+      (defined with two points (x1,y1) and (x2,y2)) with the given force. If the 
+      index didn't exist, it will be created, otherwise, it will be erased. </TD>
+  </TR>
+  <TR class="row_even">
+    <TD>magnet_list</TD>
+    <TD></TD>
+    <TD class="description"> Output all defined magnet index (third output). 
+    </TD></TR>
+  <TR class="row_odd">
+    <TD>magnet_point</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">x      [float32]      <BR></SPAN><SPAN class="arglist_arg">y 
+           [float32]      <BR></SPAN><SPAN class="arglist_arg">force      
+      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the magnet of the given index as a point (of 
+      coordinates (x,y)) with the given force. If the index didn't exist, it 
+      will be created, otherwise, it will be erased. </TD></TR>
+  <TR class="row_even">
+    <TD>magnet_reset</TD>
+    <TD></TD>
+    <TD class="description"> Erase all existing magnets index. </TD></TR>
+  <TR class="row_odd">
+    <TD>magnet_vline</TD>
+    <TD><SPAN class="arglist_arg">index      [int]      <BR></SPAN><SPAN 
+      class="arglist_arg">constant      [float32]      <BR></SPAN><SPAN class="arglist_arg">force 
+           [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the magnet of the given index as a vertical 
+      line (y = constant) with the given force. If the index didn't exist, it 
+      will be created, otherwise, it will be erased. </TD></TR>
+  <TR class="row_even">
+    <TD>max</TD>
+    <TD><SPAN class="arglist_arg">max      [int]      <BR></SPAN></TD>
+    <TD class="description"> Set the maximum number of particles in this 
+      system. Adding new particles beyond this threshold will delete the old 
+      ones. </TD></TR>
+  <TR class="row_odd">
+    <TD>memory</TD>
+    <TD><SPAN class="arglist_arg">memory      [int]      <BR></SPAN></TD>
+    <TD class="description"> Set the value of the memory of every particles. 
+      Memory is the number of old positions that have to be outputed on each 
+      bang. </TD></TR>
+  <TR class="row_even">
+    <TD>momentum</TD>
+    <TD><SPAN class="arglist_arg">momentum      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the value of the momentum of every particles. 
+      Momentum weight random mouvements of every particles. </TD></TR>
+  <TR class="row_odd">
+    <TD>reset</TD>
+    <TD></TD>
+    <TD class="description"> Reset the system. All values will be set as 
+      default. </TD></TR>
+  <TR class="row_even">
+    <TD>seuil</TD>
+    <TD><SPAN class="arglist_arg">min      [float32]      <BR></SPAN><SPAN 
+      class="arglist_arg">max      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the threshold of every particles' mouvements. 
+      Mouvements under the min value will be considered null, and mouvements 
+      upper the max value will be replaced by this value. </TD></TR>
+  <TR class="row_odd">
+    <TD>stiffness</TD>
+    <TD><SPAN class="arglist_arg">stiffness      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the value of the stiffness of every 
+      particles. Stiffness is computed from the initial position of every 
+      particles, as if every particles are tied up by a ressort on their init 
+      position. </TD></TR>
+  <TR class="row_even">
+    <TD>x_scale</TD>
+    <TD><SPAN class="arglist_arg">min      [float32]      <BR></SPAN><SPAN 
+      class="arglist_arg">max      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the range of x values for input blob's 
+      coordinates. </TD></TR>
+  <TR class="row_odd">
+    <TD>y_scale</TD>
+    <TD><SPAN class="arglist_arg">min      [float32]      <BR></SPAN><SPAN 
+      class="arglist_arg">max      [float32]      <BR></SPAN></TD>
+    <TD class="description"> Set the range of y values for input blob's 
+      coordinates. </TD></TR></TBODY></TABLE></DIV></BODY></HTML>

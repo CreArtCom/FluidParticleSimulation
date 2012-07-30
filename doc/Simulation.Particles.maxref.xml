@@ -1,0 +1,418 @@
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object box="0" name="Particle Simulation" category="Unlisted">
+	<digest>
+		Messages and attributes common to Particle Simulation operators
+	</digest>
+	<description>
+
+	</description>
+	<!--METADATA -->
+	<metadatalist>
+		<metadata name="author">
+			CreArtCom
+		</metadata>
+	</metadatalist>
+	<inletlist />
+	<outletlist />
+	<!--ARGUMENTS-->
+	<objarglist>
+	</objarglist>
+	<!-- ===================================================
+      METHODS
+  =================================================== -->
+	<methodlist>
+		<method name="bang">
+			<digest>
+			</digest>
+			<description>
+				Computes particles positions and output the result matrix.
+			</description>
+		</method>
+		<method name="blob">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="x" type="float32" />
+				<arg name="y" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Notify the new position of the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_add">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="nbToAdd" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the "number to add" value of the blob identified by its index. In this context, this is number of particles to add on every blob emergence.
+			</description>
+		</method>
+		<method name="blob_apply_attractivity">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="apply" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Determine if attractive force have to be applied on particles for the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_apply_eraser">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="apply" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Determine if particles in the blob identified by its index have to be erased.
+			</description>
+		</method>
+		<method name="blob_apply_force">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="apply" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Determine if force (push) have to be applied on particles for the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_attractive_force">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the value of attractive force. Attractive force is a blob as a point magnet.
+			</description>
+		</method>
+		<method name="blob_brush">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="brush_index" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the brush attached to the blob identified by its index. 0 = circle, 1 = rectangle.
+			</description>
+		</method>
+		<method name="blob_circle">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="radius" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the radius of the circle brush of the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_force">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the force (push) of the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_info">
+			<arglist>
+				<arg name="index" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Output some informations about the blob identified by its index (fourth outlet).
+			</description>
+		</method>
+		<method name="blob_list">
+			<arglist>
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Output all existing index of blobs (fourth outlet).
+			</description>
+		</method>
+		<method name="blob_rectangle">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="width" type="float32" />
+				<arg name="height" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the width and the height of the rectangle brush of the blob identified by its index.
+			</description>
+		</method>
+		<method name="blob_reset">
+			<arglist>
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Remove all blobs.
+			</description>
+		</method>
+		<method name="blob_seuil">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="min" type="float32" />
+				<arg name="max" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the threshold of every blobs' mouvements. Mouvements under the min value will be considered null, and mouvements upper the max value will be replaced by this value.
+			</description>
+		</method>
+		<method name="edges">
+			<arglist>
+				<arg name="left" type="float32" />
+				<arg name="bottom" type="float32" />
+				<arg name="right" type="float32" />
+				<arg name="top" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the comportement of the edges. (Edges are borders of the window)
+			</description>
+		</method>
+		<method name="fluid_apply">
+			<arglist>
+				<arg name="apply" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Determine if fluid's mouvements are applied on particles. 1 = Enable, 0 = Disable
+			</description>
+		</method>
+		<method name="fluid_force">
+			<arglist>
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the value force of the fluid on particles. This coeficient weight fluids' mouvements.
+			</description>
+		</method>
+		<method name="friction">
+			<arglist>
+				<arg name="friction" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the value of the friction of every particles.
+			</description>
+		</method>
+		<method name="magnet_apply">
+			<arglist>
+				<arg name="apply" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Determine if magnets are applied on particles. 1 = Enable, 0 = Disable
+			</description>
+		</method>
+		<method name="magnet_delete">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="delete" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Delete a magnet identified by its index.
+			</description>
+		</method>
+		<method name="magnet_force">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the force of the magnet identified by its index. Use index "-1" for apply on every magnets.
+			</description>
+		</method>
+		<method name="magnet_hline">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="constant" type="float32" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the magnet of the given index as a horizontal line (x = constant) with the given force. If the index didn't exist, it will be created, otherwise, it will be erased.
+			</description>
+		</method>
+		<method name="magnet_info">
+			<arglist>
+				<arg name="index" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Output some informations about the magnet identified by its index (third output).
+			</description>
+		</method>
+		<method name="magnet_line">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="x1" type="float32" />
+				<arg name="y1" type="float32" />
+				<arg name="x2" type="float32" />
+				<arg name="y2" type="float32" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the magnet of the given index as a line (defined with two points (x1,y1) and (x2,y2)) with the given force. If the index didn't exist, it will be created, otherwise, it will be erased.
+			</description>
+		</method>
+		<method name="magnet_list">
+			<digest>
+			</digest>
+			<description>
+				Output all defined magnet index (third output).
+			</description>
+		</method>
+		<method name="magnet_point">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="x" type="float32" />
+				<arg name="y" type="float32" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the magnet of the given index as a point (of coordinates (x,y)) with the given force. If the index didn't exist, it will be created, otherwise, it will be erased.
+			</description>
+		</method>
+		<method name="magnet_reset">
+			<digest>
+			</digest>
+			<description>
+				Erase all existing magnets index.
+			</description>
+		</method>
+		<method name="magnet_vline">
+			<arglist>
+				<arg name="index" type="int" />
+				<arg name="constant" type="float32" />
+				<arg name="force" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the magnet of the given index as a vertical line (y = constant) with the given force. If the index didn't exist, it will be created, otherwise, it will be erased.
+			</description>
+		</method>
+		<method name="max">
+			<arglist>
+				<arg name="max" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the maximum number of particles in this system. Adding new particles beyond this threshold will delete the old ones.
+			</description>
+		</method>
+		<method name="memory">
+			<arglist>
+				<arg name="memory" type="int" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the value of the memory of every particles. Memory is the number of old positions that have to be outputed on each bang.
+			</description>
+		</method>
+		<method name="momentum">
+			<arglist>
+				<arg name="momentum" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the value of the momentum of every particles. Momentum weight random mouvements of every particles.
+			</description>
+		</method>
+		<method name="reset">
+			<arglist>
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Reset the system. All values will be set as default.
+			</description>
+		</method>
+		<method name="seuil">
+			<arglist>
+				<arg name="min" type="float32" />
+				<arg name="max" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the threshold of every particles' mouvements. Mouvements under the min value will be considered null, and mouvements upper the max value will be replaced by this value.
+			</description>
+		</method>
+		<method name="stiffness">
+			<arglist>
+				<arg name="stiffness" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the value of the stiffness of every particles. Stiffness is computed from the initial position of every particles, as if every particles are tied up by a ressort on their init position.
+			</description>
+		</method>
+		<method name="x_scale">
+			<arglist>
+				<arg name="min" type="float32" />
+				<arg name="max" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the range of x values for input blob's coordinates.
+			</description>
+		</method>
+		<method name="y_scale">
+			<arglist>
+				<arg name="min" type="float32" />
+				<arg name="max" type="float32" />
+			</arglist>
+			<digest>
+			</digest>
+			<description>
+				Set the range of y values for input blob's coordinates.
+			</description>
+		</method>
+	</methodlist>
+</c74object>
