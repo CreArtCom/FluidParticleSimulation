@@ -1,136 +1,263 @@
 package Simulation;
 
+import BlobsSystem.Blob;
+import MagnetsSystem.MagnetsSystem;
 import ParticlesSystem.ParticlesSystem;
-import Utils.Blob;
-import com.cycling74.max.*;
-import com.cycling74.jitter.*;
+import Utils.Line;
+import Utils.LinearScale2;
+import Utils.Vector;
+import com.cycling74.jitter.JitterMatrix;
+import com.cycling74.max.Atom;
+import com.cycling74.max.MaxObject;
 
 /**
+ * Particles is a max instatiable object that is responsible for the particles
+ * system simulation.
+ * This class initialise needed objects and route messages to determine what 
+ * action to do for each known message.
+ * 
  * @author	CreArtCom's Studio
  * @author	Léo LEFEBVRE
  * @version	1.0
  */
-public class Particles extends AbstractMax
+public class Particles extends Simulation
 {
-    // Définition des messages d'entrée
-	protected static String MSG_BLOBRADIUS	= "blob_radius";
-	protected static String MSG_BLOBWIDTH	= "blob_width";
-	protected static String MSG_BLOBHEIGHT	= "blob_height";
-	protected static String MSG_BLOBFORM	= "blob_form";
-    protected static String MSG_STIFFNESS	= "stiffness";
-    protected static String MSG_MOMENTUM	= "momentum";
-	protected static String MSG_PARTSEUIL	= "seuil";
-	protected static String MSG_NBPARTICLES	= "particles";
-	protected static String MSG_FRICTION	= "friction";
-	protected static String MSG_MAGNETFORCE	= "magnet_force";
-	protected static String MSG_MAGNETAPPLY	= "magnet_apply";
-	protected static String MSG_FLUIDFORCE	= "fluid_force";
-	protected static String MSG_FLUIDAPPLY	= "fluid_apply";
-	protected static String MSG_ADDPART		= "add_particles";
-	protected static String MSG_ADDFORCE	= "add_force";
-	protected static String MSG_MEMORY		= "memory";
-	protected static String MSG_FREEMAX		= "free_max";
-	protected static String MSG_FREEGEN		= "free_gen";
-	protected static String MSG_FREEERASER	= "free_erase";
-	protected static String MSG_EDGES		= "edges";
+	// Particles' system settings messages
+    /** 
+	 * Particle system's stiffness message : ~ stiffness
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
+    public static String MSG_STIFFNESS = "stiffness";
 	
-	// Paramètres par défaut
-    protected static final float	FLUID_FORCE			= 0.6f;
-    protected static final boolean	FLUID_FORCE_APPLY	= false;
-    protected static final boolean	BLOB_FORCE_APPLY	= false;
-    protected static final boolean	BLOB_ERASER_APPLY	= false;
-	protected static final boolean	MAGNET_FORCE_APPLY	= false;
-    protected static final int		PART_NBTOADD		= 0;
+    /** 
+	 * Particle system's momentum message : ~ momentum
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
+    public static String MSG_MOMENTUM = "momentum";
 	
-	// Outlets
-	protected static final int	OUTLET_MGRID	= 0;
-	protected static final int	OUTLET_MFREE	= 2;
-	protected static final int	OUTLET_MINIT	= 1;
+    /** 
+	 * Particle system's threshold message : ~ min max
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
+	public static String MSG_PARTSEUIL = "seuil";
+	
+    /** 
+	 * Particle system's friction message : ~ friction
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
+	public static String MSG_FRICTION = "friction";
+	
+    /** 
+	 * Particle system's memory message : ~ memory
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
+	public static String MSG_MEMORY = "memory";
+	
+    /** 
+	 * Particle system's maximum message : ~ max
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
+	public static String MSG_MAXPART = "max";
+	
+    /** 
+	 * Particle system's edges message : ~ left bottom right top
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
+	public static String MSG_EDGES = "edges";
 	
 	
-	// Attributs
-	private float fluidForce;
-    private ParticlesSystem particlesSystem;
-	private MaxObject fluidSimulation;
-	private int fluidCells;
-	private int fluidWidth;
-	private int fluidHeight;
-	private float[] fluidU;
-	private float[] fluidV;
-	private float stepWidth;
-	private float stepHeight;
-	private int particlesToAdd;
-	private boolean applyFluidForce;
-	private boolean applyBlobForce;
-	private boolean applyMagnetForce;
-	private boolean applyBlobEraser;
+	// Magnets settings messages
+    /** Magnet apply message : ~ apply */
+	public static String MSG_MAGNET_APPLY = "magnet_apply";
+		
+	/** Magnet add vertical ligne message : ~ */
+	public static String MSG_MAGNET_RESET = "magnet_reset";
 	
-    // Jitter Objects
-    JitterMatrix outGridMatrix;
-    JitterMatrix outFreeMatrix;
-	JitterMatrix initGridMatrix;
-	JitterMatrix nowhereMatrix;
+	/** Magnet list indexes message : ~ */
+	public static String MSG_MAGNET_LIST = "magnet_list";
 	
+	/** Magnet get info message : ~ index */
+	public static String MSG_MAGNET_INFO = "magnet_info";
+	
+	/** 
+	 * Magnet set a point's message : ~ index x y force
+	 * @see ParticlesSystem.PointMagnet
+	 */
+	public static String MSG_MAGNET_POINT = "magnet_point";
+	
+	/** 
+	 * Magnet set a line message : ~ index x1 y1 x2 y2 force
+	 * @see ParticlesSystem.LineMagnet
+	 */
+	public static String MSG_MAGNET_LINE = "magnet_line";
+	
+	/** 
+	 * Magnet add vertical ligne message : ~ index c force
+	 * @see ParticlesSystem.LineMagnet
+	 */
+	public static String MSG_MAGNET_VLINE = "magnet_vline";
+	
+	/** 
+	 * Magnet add horizontal ligne message : ~ index c force
+	 * @see ParticlesSystem.LineMagnet
+	 */
+	public static String MSG_MAGNET_HLINE = "magnet_hline";
+	
+	/** Magnet delete message : ~ index */
+	public static String MSG_MAGNET_DEL = "magnet_delete";
+	
+	/** Magnet set force message : ~ index force */
+	public static String MSG_MAGNET_FORCE = "magnet_force";
+	
+	
+	// Fluid settings messages
+	/** Fluid force message : ~ force */
+	public static String MSG_FLUIDFORCE	= "fluid_force";
+	
+	/** Fluid apply message : ~ apply */
+	public static String MSG_FLUIDAPPLY	= "fluid_apply";
+	
+	// Default parameters
+    private static final float		FLUID_FORCE			= 0.6f;
+    private static final boolean	FLUID_FORCE_APPLY	= false;
+	
+	// Outlets for output and init matrix
+	private static final int	OUTLET_MOUT		= 0;
+	private static final int	OUTLET_MINIT	= 1;
+	private static final int	OUTLET_MAGNET	= 2;
+	private static final int	OUTLET_BLOB		= 3;
+	
+	/** Coefficient used to weight fluid forces on particles */
+	protected double fluidForce;
+	
+	/** Magnets System use to manage the magnets system simulation */
+    protected MagnetsSystem magnetsSystem;
+	
+	/** Particles System use to manage the particles system simulation */
+    protected ParticlesSystem particlesSystem;
+	
+	/** Simulation.Fluid max's object to listen for retrieve forces */
+	protected MaxObject fluidSimulation;
+	
+	/** 
+	 * Total number of cells in the fluid system.
+	 * @see FluidSystem.FluidSolver
+	 */
+	protected int fluidCells;
+	
+	/** 
+	 * Number of cells in width in the fluid system.
+	 * @see FluidSystem.FluidSolver
+	 */
+	protected int fluidWidth;
+	
+	/** 
+	 * Number of cells in height in the fluid system.
+	 * @see FluidSystem.FluidSolver
+	 */
+	protected int fluidHeight;
+	
+	/** 
+	 * Current U array of the fluid system : forces applied on X axis
+	 * @see FluidSystem.FluidSolver
+	 */
+	protected float[] fluidU;
+	
+	/** 
+	 * Current V array of the fluid system : forces applied on Y axis
+	 * @see FluidSystem.FluidSolver
+	 */
+	protected float[] fluidV;
+	
+	/** Width of a cell in engine units */
+	protected double stepWidth;
+	
+	/** Height of a cell in engine units*/
+	protected double stepHeight;
+	
+	/** Determine if fluid forces are applied to particles */
+	protected boolean applyFluidForce;
+	
+	/** Output matrix : matrix of current particles positions */
+    protected JitterMatrix outMatrix;
+	
+	/** Init matrix : matrix of initial particles positions */
+	protected JitterMatrix initMatrix;
+	
+	/** LinearScale used to scale output position (from engine to output) */
+	protected LinearScale2 fluidScale;
+	
+	/**
+	 * Construct a max object for particles system simulation
+	 * @param args Max Object's  arguments - not use but required
+	 */
     public Particles(Atom[] args)
     {
 		super(args);
 		
-        // 2 inputs - 3 outputs
-        declareIO(4, 3);
+        // 2 inputs - 4 outputs
+        declareIO(2, 4);
         setInletAssist(0, "Bang and setting's messages");
-		setInletAssist(1, "Matrix of initials free particles");
-		setInletAssist(2, "Matrix of initials grid particles");
-		setInletAssist(3, "Matrix of magnets settings");
-        setOutletAssist(0, "Matrix of deplaced points in grid");
-		setOutletAssist(1, "Matrix of initial points' positions in grid");
-        setOutletAssist(2, "Matrix of deplaced free points");
-		
-		// Initialisation des matrices
-		outGridMatrix	= new JitterMatrix(2, "float32", 0, 0);
-		outFreeMatrix	= new JitterMatrix(2, "float32", 0, 0);
-		initGridMatrix	= new JitterMatrix(2, "float32", 0, 0);
-		nowhereMatrix	= new JitterMatrix("nowhere", 2, "float32", 1, 1);
-		nowhereMatrix.setcell2d(0, 0, new float[]{Float.MAX_VALUE, Float.MAX_VALUE});
-		
-		// Initialisation des Attributs
+		setInletAssist(1, "Matrix of initials particles positions");
+        setOutletAssist(OUTLET_MOUT, "Matrix of current particles positions");
+		setOutletAssist(OUTLET_MINIT, "Matrix of initial particles positions");
+		setOutletAssist(OUTLET_MAGNET, "Output of current magnets' settings");
+		setOutletAssist(OUTLET_BLOB, "Output of current blobs' settings");
+
+		outMatrix			= new JitterMatrix(2, "float32", 0, 0);
+		initMatrix			= new JitterMatrix(2, "float32", 0, 0);
 		fluidForce			= FLUID_FORCE;
 		applyFluidForce		= FLUID_FORCE_APPLY;
-		applyBlobForce		= BLOB_FORCE_APPLY;
-		applyMagnetForce	= MAGNET_FORCE_APPLY;
-		fluidSimulation		= null;
-		particlesToAdd		= PART_NBTOADD;
-		applyBlobEraser		= BLOB_ERASER_APPLY;
-
-    	// On créer le système de particules
-		particlesSystem = new ParticlesSystem(this);
-		particlesSystem.setCircleRadius(BLOB_RADIUS).setBoxHeight(BLOB_HEIGHT).setBoxWidth(BLOB_WIDTH);
+		fluidScale			= new LinearScale2(ENGINE_MIN, ENGINE_MAX, Fluid.FLUID_MIN, Fluid.FLUID_MAX);
+		magnetsSystem		= new MagnetsSystem(this);
+		particlesSystem		= new ParticlesSystem(this, magnetsSystem, blobsSystem);
     }
  
+	/**
+	 * Routine when a bang message occurs on first inlet.
+	 * For each update, this method retrieve the fluidSolver attributes (if 
+	 * applyFluidForce is enabled), update the particlesSystem and output the 
+	 * particles positions matrix.
+	 * @see ParticlesSystem.ParticlesSystem
+	 */
     @Override
     protected void bang()
     {
-        // Message de Bang sur l'inlet 0
         if(getInlet() == 0)
         {
 			if(applyFluidForce)
 			{
 				fluidU = fluidSimulation.getAttrFloatArray("fluid_u");
 				fluidV = fluidSimulation.getAttrFloatArray("fluid_v");
+				fluidCells = fluidU.length;
+				
+				if(fluidSimulation.getAttrInt("fluid_w") != fluidWidth) {
+					fluidWidth	= fluidSimulation.getAttrInt("fluid_w");
+					stepWidth	= 1. / (double) fluidWidth;
+				}
+				
+				if(fluidSimulation.getAttrInt("fluid_h") != fluidHeight) {
+					fluidHeight	= fluidSimulation.getAttrInt("fluid_h");
+					stepHeight	= 1. / (double) fluidHeight;
+				}
 			}
 			
 			particlesSystem.update();
 			
-			if(particlesSystem.hasFreeParticles())
-				outlet(OUTLET_MFREE, MSG_MATRIX, outFreeMatrix.getName());
-			
-			if(particlesSystem.hasGridParticles())
-				outlet(OUTLET_MGRID, MSG_MATRIX, outGridMatrix.getName());
+			if(particlesSystem.hasParticles())
+				outlet(OUTLET_MOUT, MSG_MATRIX, outMatrix.getName());
         }
     }
 	
+	/**
+	 * Routine when something other than a bang message occurs.
+	 * Execute appropriates routines for known messages (on appropriate inlet).
+	 * Call first Simulation.TreatMessage.
+	 * Call Max.unknownMessage if the message is unknown.
+	 * @param message Max's header message
+	 * @param args Max's parameters message
+	 */
     @Override
-    // Contrôles les messages d'entrée (bon message sur bonne entrée)
-    // Ne peut pas recevoir de bang (voir méthode bang)
     protected void anything(String message, Atom[] args)
     {
 		boolean unknownMessage = false;
@@ -139,56 +266,42 @@ public class Particles extends AbstractMax
 		{
 			if(getInlet() == 0)
 			{
-				// Messages de paramétrage
 				if(args.length == 0)
 				{
 					if(message.contentEquals(MSG_RESET))
 					{
 						particlesSystem.reset();
-						
-						if(particlesSystem.hasGridParticles())
-							outlet(OUTLET_MINIT, MSG_MATRIX, initGridMatrix.getName());
+
+						if(particlesSystem.hasParticles())
+							outlet(OUTLET_MINIT, MSG_MATRIX, initMatrix.getName());
 					}
 
-					else if(message.contentEquals(MSG_FREEGEN))
-						particlesSystem.genFreeParticles();
+					else if(message.contentEquals(MSG_MAGNET_RESET))
+						magnetsSystem.resetMagnets();
+					
+					else if(message.contentEquals(MSG_MAGNET_LIST))
+						outlet(OUTLET_MAGNET, magnetsSystem.listIndexes());
 
 					else
 						unknownMessage = true;
 				}
 
-				// Messages de paramétrage
 				else if(args.length == 1)
-				{			
+				{		
 					if(message.contentEquals(MSG_STIFFNESS))
-						particlesSystem.setStiffness(args[0].toFloat());
+						particlesSystem.setStiffness(args[0].toDouble());
 
 					else if(message.contentEquals(MSG_MOMENTUM))
-						particlesSystem.setMomentum(args[0].toFloat());
+						particlesSystem.setMomentum(args[0].toDouble());
 
 					else if(message.contentEquals(MSG_FRICTION))
-						particlesSystem.setFriction(args[0].toFloat());
-
-					else if(message.contentEquals(MSG_BLOBRADIUS))
-						particlesSystem.setCircleRadius(args[0].toFloat());
-
-					else if(message.contentEquals(MSG_BLOBWIDTH))
-						particlesSystem.setBoxWidth(args[0].toFloat());
-
-					else if(message.contentEquals(MSG_BLOBHEIGHT))
-						particlesSystem.setBoxHeight(args[0].toFloat());
-
-					else if(message.contentEquals(MSG_BLOBFORM))
-						particlesSystem.setBrush(args[0].toInt());
+						particlesSystem.setFriction(args[0].toDouble());
 
 					else if(message.contentEquals(MSG_FLUIDFORCE))
-						fluidForce = args[0].toFloat();
-					
-					else if(message.contentEquals(MSG_MAGNETFORCE))
-						particlesSystem.setMagnetForce(args[0].toFloat());
+						fluidForce = args[0].toDouble();
 
-					else if(message.contentEquals(MSG_MAGNETAPPLY))
-						applyMagnetForce = args[0].toBoolean();
+					else if(message.contentEquals(MSG_MAGNET_APPLY))
+						magnetsSystem.setEnable(args[0].toBoolean());
 
 					else if(message.contentEquals(MSG_FLUIDAPPLY))
 					{
@@ -197,29 +310,21 @@ public class Particles extends AbstractMax
 						
 						if(applyFluidForce)
 							printOut("Simulation.Fluid successfully loaded !");
-						else
+						else if(args[0].toBoolean())
 							printOut("Unable to find a Max Object named \"Simulation.Fluid\" in your patch...");
 					}
-
-					else if(message.contentEquals(MSG_ADDPART))
-						particlesToAdd = args[0].toInt();
-
-					else if(message.contentEquals(MSG_ADDFORCE))
-						applyBlobForce = args[0].toBoolean();
 
 					else if(message.contentEquals(MSG_MEMORY))
 						particlesSystem.setMemory(args[0].toInt());
 
-					else if(message.contentEquals(MSG_FREEMAX))
-						particlesSystem.setMaxFreeParticles(args[0].toInt());
-
-					else if(message.contentEquals(MSG_FREEERASER))
-					{
-						applyBlobEraser = args[0].toBoolean();
-						
-						if(applyBlobEraser && particlesToAdd > 0)
-							error("It does not seem brilliant to add and delete free particles at the same time.");
-					}
+					else if(message.contentEquals(MSG_MAXPART))
+						particlesSystem.setMaxParticles(args[0].toInt());
+					
+					else if(message.contentEquals(MSG_MAGNET_DEL))
+						magnetsSystem.deleteMagnet(args[0].toInt());
+					
+					else if(message.contentEquals(MSG_MAGNET_INFO))
+						outlet(OUTLET_MAGNET, magnetsSystem.getInfo(args[0].toInt()));
 
 					else
 						unknownMessage = true;
@@ -228,21 +333,26 @@ public class Particles extends AbstractMax
 
 				else if(args.length == 2)
 				{
-					if(message.contentEquals(MSG_NBPARTICLES))
-						particlesSystem.setNbParticles(args[0].toInt(), args[1].toInt());
-
-					else if(message.contentEquals(MSG_PARTSEUIL))
-						particlesSystem.setThreshold(args[0].toFloat(), args[1].toFloat());
+					if(message.contentEquals(MSG_PARTSEUIL))
+						particlesSystem.setThreshold(args[0].toDouble(), args[1].toDouble());
 					
-					else if(message.contentEquals(MSG_FLUIDDIM))
-					{
-						fluidWidth	= args[0].toInt();
-						fluidHeight	= args[1].toInt();
-						fluidCells	= fluidWidth * fluidHeight;
-						stepWidth	= 1.f / (float) fluidWidth;
-						stepHeight	= 1.f / (float) fluidHeight;
-					}
+					else if(message.contentEquals(MSG_MAGNET_FORCE))
+						magnetsSystem.setMagnetForce(args[0].toInt(), args[1].toFloat());
 
+					else
+						unknownMessage = true;
+				}
+				
+				else if(args.length == 3)
+				{
+					if(message.contentEquals(MSG_MAGNET_VLINE)) {
+						magnetsSystem.setLineMagnet(args[0].toInt(), new Line(-1., 0., args[1].toDouble()), args[2].toDouble());
+					}
+					
+					else if(message.contentEquals(MSG_MAGNET_HLINE)) {
+						magnetsSystem.setLineMagnet(args[0].toInt(), new Line(0., -1., args[1].toDouble()), args[2].toDouble());
+					}
+					
 					else
 						unknownMessage = true;
 				}
@@ -252,6 +362,18 @@ public class Particles extends AbstractMax
 					if(message.contentEquals(MSG_EDGES))
 						particlesSystem.setEdges(args[0].toInt(), args[1].toInt(), args[2].toInt(), args[3].toInt());
 					
+					else if(message.contentEquals(MSG_MAGNET_POINT))
+						magnetsSystem.setPointMagnet(args[0].toInt(), new Vector(args[1].toDouble(), args[2].toDouble()), args[3].toDouble());
+					
+					else
+						unknownMessage = true;
+				}
+				
+				else if(args.length == 6)
+				{
+					if(message.contentEquals(MSG_MAGNET_LINE))
+						magnetsSystem.setLineMagnet(args[0].toInt(), new Line(0., new Vector(args[1].toDouble(), args[2].toDouble()), new Vector(args[3].toDouble(), args[4].toDouble())), args[5].toDouble());
+					
 					else
 						unknownMessage = true;
 				}
@@ -259,23 +381,14 @@ public class Particles extends AbstractMax
 				else
 					unknownMessage = true;
 			}
+			
+			// Load init particles
 			else if(getInlet() == 1)
 			{
 				if(args.length == 1 && message.contentEquals(MSG_MATRIX))
 				{
 					JitterMatrix jm = new JitterMatrix(args[0].toString());
-					particlesSystem.loadFreeParticles(jm);
-				}
-				
-				else
-					unknownMessage = true;
-			}
-			else if(getInlet() == 3)
-			{
-				if(args.length == 1 && message.contentEquals(MSG_MATRIX))
-				{
-					JitterMatrix jm = new JitterMatrix(args[0].toString());
-					particlesSystem.initMagnets(jm);
+					particlesSystem.loadParticles(jm);
 				}
 				
 				else
@@ -287,121 +400,126 @@ public class Particles extends AbstractMax
 			unknownMessage(message, args);
     }
     
+	/**
+	 * Define whatever to do when a blob occurs.
+	 * In this case, blob forces and erase events are transmitted to the 
+	 * particlesSystem.
+	 * @param index Blob's index
+	 * @param position Position on which blob occurs
+	 */
 	@Override
-	protected void applyBlob(int index, float posX, float posY)
+	protected void applyBlob(int index, Vector position)
 	{
-		// On récupère le blob existant et on applique la différence de positions
-		if(blobs.containsKey(index))
-		{
-			Blob blob = blobs.get(index);
-			blob.Move(posX, posY);
-			
-			// On ajoute des particles
-			if(particlesToAdd > 0)
-				particlesSystem.addFreeParticles(blob.getX(), blob.getY(), particlesToAdd);
-		}
+		Blob blob = blobsSystem.setPosition(index, scaleFrom.Scale(position));
 		
-		// On initialise un nouveau blob
-		else
-			blobs.put(index, new Blob(posX, posY, this));
+		// On ajoute des particles
+		if(blob != null && blob.getToAdd() > 0)
+			particlesSystem.addParticles(blob.getPosition(), blob.getToAdd());
 	}
 	
-	public float[] applyFluid(float posX, float posY)
+	/**
+	 * Get the current fluid force on the given position
+	 * @param position Position of the point which feels the fluid
+	 * @return The current fluid force applied to the givent point
+	 */
+	public Vector applyFluid(Vector position)
 	{
-		int w = (int) Math.floor(posX / stepWidth);
-		int h = (int) Math.floor(posY / stepHeight);
+		Vector fluidPos = fluidScale.Scale(position);
+		int w = (int) Math.floor(fluidPos.x / stepWidth);
+		int h = (int) Math.floor(fluidPos.y / stepHeight);
 		int index = ( h * fluidWidth) + w;
 
 		if(index < fluidCells)
-			return new float[]{fluidU[index] * fluidForce, fluidV[index] * fluidForce};
-		else
-			return new float[]{0, 0};
+			return new Vector(fluidU[index], fluidV[index]).Scalar(fluidForce);
+
+		return new Vector();
 	}
 
+	/**
+	 * Routine when max object is deleted.
+	 * Destroy the particlesSystem.
+	 */
     @Override
     public void notifyDeleted()
     {
-		outGridMatrix.freePeer();
-		outFreeMatrix.freePeer();
-		initGridMatrix.freePeer();
 		particlesSystem.destroy();
+		outMatrix.freePeer();
+		initMatrix.freePeer();
     }
-
-	public boolean applyBlobForce() {
-		return applyBlobForce && blobForce != 0.f;
-	}
 	
+	/**
+	 * Determine if the fluid is applied on particles
+	 * @return <code>true</code> if fluid force is applied on particles, 
+	 * <code>false</code> otherwise
+	 */
 	public boolean applyFluidForce() {
 		return applyFluidForce;
 	}
 	
-	public boolean applyMagnetForce() {
-		return applyMagnetForce;
+	/**
+	 * Get the output matrix
+	 * @return Current output matrix
+     * @since 1.0
+     */
+	public JitterMatrix getOutMatrix() {
+		return outMatrix;
 	}
 	
-	public boolean applyBlobEraser() {
-		return applyBlobEraser;
-	}
-	
-	/********************************* GETTERS *********************************/
-
 	/**
-	 * Getter : outGridMatrix
-	 * @return	Matrice contenant le centre des particules liés à la grille 
-	 *			déplacés après une itération du système.
-     * @since	1.0
-     */
-	public JitterMatrix getGridMatrix() {
-		return outGridMatrix;
-	}
-
-	/**
-	 * Getter : outFreeMatrix
-	 * @return	Matrice contenant le centre des particules libres déplacés après
-	 *			une itération du système.
-     * @since	1.0
-     */
-	public JitterMatrix getFreeMatrix() {
-		return outFreeMatrix;
+	 * Set a cell in output matrix
+	 * @param i Index <code>i</code> on the matrix
+	 * @param j Index <code>j</code> on the matrix
+	 * @param value Value to set
+	 */
+	public void setOutMatrix(int i, int j, Vector value) {
+		outMatrix.setcell2d(i, j, scaleTo.Scale(value.x, value.y));
 	}
     
 	/**
-	 * Getter : 
-	 * @return	Matrice contenant le centre des particules liés à la grille 
-	 *			avant toute itération du système (position initiale).
-     * @since	1.0
+	 * Get the init matrix
+	 * @return Current init matrix
+     * @since 1.0
      */
 	public JitterMatrix getInitMatrix() {
-		return initGridMatrix;
+		return initMatrix;
 	}
 
-	public void setFreeMatrixDim(int width, int height)
-	{
-		if(width > 0 && height > 0)
-			outFreeMatrix.setDim(new int[]{width, height});
-		else
-		{
-			outFreeMatrix.clear();
-			outFreeMatrix.setDim(new int[]{0, 0});
-			outlet(OUTLET_MFREE, MSG_MATRIX, nowhereMatrix.getName());
-		}
+	/**
+	 * Set a cell in init matrix
+	 * @param i Index <code>i</code> on the matrix
+	 * @param j Index <code>j</code> on the matrix
+	 * @param value Value to set
+	 */
+	public void setInitMatrix(int i, int j, Vector value) {
+		initMatrix.setcell2d(i, j, scaleTo.Scale(value.x, value.y));
 	}
-
-	public void setGridMatrixDim(int width, int height)
+	
+	/**
+	 * Set the output matrix dimensions.
+	 * If dimension are not strictly positive, nowhere matrix will be outputed.
+	 * @param width New width of the output matrix
+	 * @param height New height of the output matrix
+	 */
+	public void setOutMatrixDim(int width, int height)
 	{
 		if(width > 0 && height > 0)
 		{
-			outGridMatrix.setDim(new int[]{width, height});
-			initGridMatrix.setDim(new int[]{width, height});
+			outMatrix.setDim(new int[]{width, height});
+			initMatrix.setDim(new int[]{width, height});
 		}
 		else
 		{
-			outGridMatrix.clear();
-			initGridMatrix.clear();
-			outGridMatrix.setDim(new int[]{0, 0});
-			initGridMatrix.setDim(new int[]{0, 0});
-			outlet(OUTLET_MGRID, MSG_MATRIX, nowhereMatrix.getName());
+			outMatrix.clear();
+			initMatrix.clear();
+			outMatrix.setDim(new int[]{0, 0});
+			initMatrix.setDim(new int[]{0, 0});
+			outlet(OUTLET_MOUT, MSG_MATRIX, nowhereMatrix.getName());
 			outlet(OUTLET_MINIT, MSG_MATRIX, nowhereMatrix.getName());
 		}
+	}
+
+	@Override
+	protected void outBlob(String message) {
+		outlet(OUTLET_BLOB, message);
 	}
 }

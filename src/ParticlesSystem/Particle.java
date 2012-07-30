@@ -1,164 +1,177 @@
 package ParticlesSystem;
 
+import Simulation.Max;
+import Utils.Vector;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
- * A particle is a little 2D circle in a mechanical system.
+ * A particle is a 2D point in a mechanical system.
  *
  * @author	CreArtCom's Studio
  * @author	Léo LEFEBVRE
  * @version	1.0
  */
-public abstract class Particle
+public class Particle
 {
-	protected ParticlesSystem particlesSystem;
+	/** System responsible for this particle */
+	protected ParticlesSystem system;
+	
+	/** Random generator used to apply moment */
     protected Random generator;
-	protected float vx, vy;
 	
-	/**
-	 * Current abscissa of the particle scaled by ParticlesSystem.ENGINE_X
-	 */
-    protected float x;
+	/** Current net force */
+	protected Vector force;
 	
-	/**
-	 * Current ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
-	 */
-	protected float y;
+	/** Initial position of this particle, used to apply stiffness */
+	protected Vector initPos;
+	
+	/** "History" of the particle : the system.getMemory()'th old positions of this particle */
+	protected List<Vector> oldPos;
+	
+	/** Current position of the particle scaled by Max.ENGINE_... */
+    protected Vector position;
     
 	/**
 	 * Abstract constructor of a particle
-	 * @param particlesSystem Particle's System
+	 * @param position Particle's position
+	 * @param system Particle's System
 	 */
-    public Particle(ParticlesSystem particlesSystem)
+    public Particle(Vector position, ParticlesSystem system)
     {
-		this.particlesSystem = particlesSystem;
-		generator = new Random();
+		this.system = system;
+		this.generator = new Random();
+		this.position = new Vector(position);
+		this.initPos = new Vector(position);
+		this.force = new Vector();
+		this.oldPos = new ArrayList<Vector>(system.getMemory());
+		clearHistory();
     }
 	
-	// On applique un grain de sel
+	/**	Apply some random mouvement to the particle weighted by system.getMomentum() */
 	protected void applyMoment()
 	{
-		vx += (generator.nextFloat() - 0.5f) * particlesSystem.getMomentum();
-		vy += (generator.nextFloat() - 0.5f) * particlesSystem.getMomentum();
+		Vector moment = new Vector(generator.nextFloat() - 0.5f, generator.nextFloat() - 0.5f);
+		moment.Scalar(system.getMomentum());
+		force.Add(moment);
 	}
 	
-	// On applique les frottements
+	/** Apply some stiffness to the particle weighted by system.getStiffness() */
+	protected void applyStiffness()
+	{
+		Vector delta = new Vector(position);
+		delta.Subtract(initPos);
+		delta.Scalar(system.getStiffness());
+		position.Subtract(delta);
+	}
+	
+	/** Apply somme friction to the particle weighted by system.getFriction() */
 	protected void applyFriction()
 	{
-		vx -= particlesSystem.getFriction() * vx;
-		vy -= particlesSystem.getFriction() * vy;
+		Vector temp = new Vector(force);
+		temp.Scalar(system.getFriction());
+		force.Subtract(temp);
 	}
 	
-	// On met à jour la position
-	protected void updatePosition()
+	/** Compute the new particle's position */
+	public void update() 
 	{
-		float delta = (float) Math.sqrt((vx * vx) + (vy * vy));
+		// Apply forces
+		applyMoment();
+		applyStiffness();
 		
-		// Seuil max
-		//vx = Math.abs(vx) < particlesSystem.getSeuilMax() ? vx : (vx / (float)Math.abs(vx) * particlesSystem.getSeuilMax());
-		//vy = Math.abs(vy) < particlesSystem.getSeuilMax() ? vy : (vy / (float)Math.abs(vy) * particlesSystem.getSeuilMax());
-		if(delta > particlesSystem.getSeuilMax())
+		// Update position
+		computeRealPosition();
+		applyFriction();
+		
+		// On dépile le trop plein et/ou le plus vieux
+		while(oldPos.size() >= system.getMemory()) {
+			oldPos.remove(0);
+		}
+
+		// On empile le manquement et/ou le nouveau
+		while(oldPos.size() < system.getMemory()) {
+			oldPos.add(new Vector(position));
+		}
+	}
+		/** 
+	 * Check if the new virtually computed position is really reachable.
+	 * If it is reachable, do nothing, otherwise, computes the farest postion reachable.
+	 * A position could be unreachable by the fault of system.threshold or window borders.
+	 */
+	protected void computeRealPosition()
+	{
+		Vector netForce = new Vector(force);
+		double delta = netForce.getNorm();
+
+		// Maximum threshold is overpassed
+		if(delta > system.getSeuilMax()) {
+			netForce.Scalar(system.getSeuilMax() / delta);
+		}
+		
+		// Minimum threshold is overpassed
+		if(delta > system.getSeuilMin())
 		{
-			if(vy == 0.f)
-				vx = Math.signum(vx) * particlesSystem.getSeuilMax();
-			else
-			{
-				float ratio = vx / vy;
-				vy = (float) (Math.signum(vy) * particlesSystem.getSeuilMax() / Math.sqrt((ratio * ratio) + 1));
-				vx = ratio * vy;
+			// New position
+			position.Add(netForce);
+
+			// Left edge reached
+			if(position.x < Max.ENGINE_MIN.x) {
+				position.x = system.getEdgePosition(ParticlesSystem.LEFT_EDGE, position.x);
+				force.x *= system.getEdgeVelocity(ParticlesSystem.LEFT_EDGE);
+			}
+			// Right edge reached
+			else if(position.x > Max.ENGINE_MAX.x) {
+				position.x = system.getEdgePosition(ParticlesSystem.RIGHT_EDGE, position.x);
+				force.x *= system.getEdgeVelocity(ParticlesSystem.RIGHT_EDGE);
+			}
+
+			// Back edge reached
+			if(position.y < Max.ENGINE_MIN.y) {
+				position.y = system.getEdgePosition(ParticlesSystem.BOTTOM_EDGE, position.y);
+				force.y *= system.getEdgeVelocity(ParticlesSystem.BOTTOM_EDGE);
+			}
+			// Front edge reached
+			else if(position.y > Max.ENGINE_MAX.y) {
+				position.y = system.getEdgePosition(ParticlesSystem.TOP_EDGE, position.y);
+				force.y *= system.getEdgeVelocity(ParticlesSystem.TOP_EDGE);
 			}
 		}
-		
-		// Seuil min
-		//vx = Math.abs(vx) > particlesSystem.getSeuilMin() ? vx : 0.f;
-		//vy = Math.abs(vy) > particlesSystem.getSeuilMin() ? vy : 0.f;
-		if(delta < particlesSystem.getSeuilMin())
-		{
-			vx = 0;
-			vy = 0;
-		}
-		
-		x += vx;
-		y += vy;
-		
-		// Left edge
-		if(x < 0) {
-			x = particlesSystem.getEdgePosition(ParticlesSystem.LEFT_EDGE, x);
-			vx *= particlesSystem.getEdgeVelocity(ParticlesSystem.LEFT_EDGE);
-		}
-		// Right edge
-		else if(x > 1) {
-			x = particlesSystem.getEdgePosition(ParticlesSystem.RIGHT_EDGE, x);
-			vx *= particlesSystem.getEdgeVelocity(ParticlesSystem.RIGHT_EDGE);
-		}
-
-		// Bottom edge
-		if(y < 0) {
-			y = particlesSystem.getEdgePosition(ParticlesSystem.BOTTOM_EDGE, y);
-			vy *= particlesSystem.getEdgeVelocity(ParticlesSystem.BOTTOM_EDGE);
-		}
-		// Top edge
-		else if(y > 1) {
-			y = particlesSystem.getEdgePosition(ParticlesSystem.TOP_EDGE, y);
-			vy *= particlesSystem.getEdgeVelocity(ParticlesSystem.TOP_EDGE);
-		}
-
-		// hackish way to make particles glitter when the slow down a lot
-//		if(vx * vx + vy * vy < 1) {
-//			vx = 2.f*generator.nextFloat()-1.f;
-//			vy = 2.f*generator.nextFloat()-1.f;
-//		}
 	}
+	
+	/** Clear old positions' history of this particle */
+	private void clearHistory()
+	{
+		oldPos.clear();
+		
+		for(int k = 0; k < system.getMemory(); k++) {
+			oldPos.add(new Vector(position));
+		}
+	}
+    
 
 	/**
 	 * Apply a force for the next update (erase others)
-	 * @param dx Force value on x axis
-	 * @param dy Force value on y axis
+	 * @param delta Force value to apply
 	 */
-	public void applyForce(float dx, float dy) {
-		vx = dx;
-		vy = dy;
+	public void applyForce(Vector delta) {
+		force = new Vector(delta);
 	}
 
 	/**
 	 * Add a force for the next update (added to others)
-	 * @param dx Force value on x axis
-	 * @param dy Force value on y axis
+	 * @param delta Force value to add
 	 */
-	public void addForce(float dx, float dy) {
-		vx += dx;
-		vy += dy;
+	public void addForce(Vector delta) {
+		force.Add(delta);
 	}
 	
-	/**
-	 * Alias : Add a force for the next update (added to others)
-	 * @param delta Force value ([0] on x axis, [1] on y axis)
-	 */
-	public void addForce(float[] delta) {
-		addForce(delta[0], delta[1]);
+	public List<Vector> getHistory() {
+		return oldPos;
 	}
 	
-	/**
-	 * Alias : Apply a force for the next update (erase others)
-	 * @param delta Force value ([0] on x axis, [1] on y axis)
-	 */
-	public void applyForce(float[] delta) {
-		applyForce(delta[0], delta[1]);
-	}
-	
-	/**
-	 * @return	x
-     * @since	1.0
-     */
-	public float getX() {
-		return x;
-	}
-
-	/**
-	 * @return	y
-     * @since	1.0
-     */
-	public float getY() {
-		return y;
+	public Vector getPosition() {
+		return position;
 	}
 }

@@ -1,11 +1,17 @@
 package ParticlesSystem;
 
+import BlobsSystem.Blob;
+import BlobsSystem.BlobsSystem;
+import BlobsSystem.Brush;
+import MagnetsSystem.MagnetsSystem;
+import MagnetsSystem.PointMagnet;
+import Simulation.Max;
 import Simulation.Particles;
-import Utils.Brush;
+import Utils.Vector;
 import com.cycling74.jitter.JitterMatrix;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -16,11 +22,7 @@ import java.util.concurrent.Semaphore;
  * @version	1.0
  */
 public class ParticlesSystem 
-{
-	// Bornes coordonnées Engine
-	public static final float[] ENGINE_X = {0, 1};
-	public static final float[] ENGINE_Y = {0, 1};
-	
+{	
 	public static final int		LEFT_EDGE	= 0;
 	public static final int		BOTTOM_EDGE	= 1;
 	public static final int		RIGHT_EDGE	= 2;
@@ -30,348 +32,287 @@ public class ParticlesSystem
 	public static final int		EDGE_BOUND	= 1;
 	public static final int		EDGE_BOOM	= 2;
 	
-    // Paramètres par défaut
-    private static final float[]	SEUIL		= {0.001f, 0.1f};
-	private static final float		MOMENTUM	= 0.05f;
-	private static final float		STIFFNESS	= 0.5f;
-	private static final float		FRICTION	= 0.1f;
-	private static final int		MEMORY		= 2;
-	private static final int		MAXFREEPART	= 1000;
-	private static final float		MAGNET_FORCE	= 0.001f;
+    // Default parameters
+    private static final Vector		SEUIL			= new Vector(0.001f, 0.1f);
+	private static final double		MOMENTUM		= 0.05;
+	private static final double		STIFFNESS		= 0.5;
+	private static final double		FRICTION		= 0.1;
+	private static final int		MEMORY			= 2;
+	private static final int		MAXPARTICLES	= 1000;
+	
+	/** Global stiffness force applied to every particles */
+	protected double stiffness;
+	
+	/** Global momentum force applied to every particles */
+	protected double momentum;
+	
+	/** Global friction force applied to every particles */
+	protected double friction;
+	
+	/** 
+	 * Global threshold applied to every particles' mouvements.
+	 * Movements under the min threshold are considered null, and movements over
+	 * the max threshold are casted.
+	 */
+	protected Vector threshold;
+	
+	/** 
+	 * Global memory applied to every particles.
+	 * Memory set how many old particles' position to memorize (history)
+	 */
+	protected int memory;
+	
+	/** Maximal number of particles allowed in this system */
+	protected int maxParticles;
+	
+	/** Not yet in use */
+	protected boolean recycleParticles;
+	
+	/** 
+	 * Temporary list of particles that have to be delete at next update.
+	 * Using this list is important to avoid concurrent modification and 
+	 * re-synchronize erase events to each update tick.
+	 */
+	protected List<Particle> particlesToDelete;
+	
+	/**	Current list of all particles in this system */
+    protected List<Particle> particles;
+	
+	/** Magnets' system */
+	protected MagnetsSystem magnetsSystem;
+	
+	/** Blobs' system */
+	protected BlobsSystem blobsSystem;
 
-	
-	// Coefficients pour interpolation (linear scale)
-	private float[] xFrom, yFrom;
-	private float[] xTo, yTo;
-	
-	protected float		stiffness;
-	protected float		momentum;
-	protected float		friction;
-	protected float[]	seuil;
-	protected int		memory;
-	protected int		maxFreeParticles;
-	
-	private List<FreeParticle> freeParticlesToDel;
-    private List<GridParticle> particlesGrid;
-	private List<FreeParticle> particlesFree;
-	private List<Magnet> magnets;
-    private Particles particlesSimulation;
+	/** Object responsible for the simulation */
+    protected Particles simulation;
 
-	protected int		nbParticlesW;
-	protected int		nbParticlesH;
-	protected Brush		brush;
-	protected int		current;
-	protected int[]		edgeComportements;
-	protected float		magnetForce;
+	/** Define on each window edge which comportement to apply on particles */
+	protected int[] edgeComportements;
 	
-	private	Semaphore	freeSemaphore;
-	private	Semaphore	gridSemaphore;
+	/** Prevent concurrent modification is particles' lists */
+	protected Semaphore semaphore;
 
 	/**
 	 * Construct a particles' System
-	 * @param particlesSimulation Object responsible for conducting the simulation
+	 * @param simulation Object responsible for conducting the simulation
 	 */
-	public ParticlesSystem(Particles particlesSimulation) 
+	public ParticlesSystem(Particles simulation, MagnetsSystem magnetsSystem, BlobsSystem blobsSystem) 
 	{
-		this.particlesSimulation = particlesSimulation;
-		
+		this.simulation			= simulation;
+		this.magnetsSystem		= magnetsSystem;
+		this.blobsSystem		= blobsSystem;
 		this.stiffness			= STIFFNESS;
 		this.momentum			= MOMENTUM;
 		this.friction			= FRICTION;
-		this.seuil				= SEUIL;
+		this.threshold			= SEUIL;
 		this.memory				= MEMORY;
-		this.brush				= new Brush();
-		this.maxFreeParticles	= MAXFREEPART;
-		this.current			= 0;
-		this.particlesGrid		= new ArrayList<GridParticle>();
-		this.particlesFree		= new ArrayList<FreeParticle>();
-		this.magnets			= new ArrayList<Magnet>();
-		this.freeParticlesToDel	= new ArrayList<FreeParticle>();
+		this.maxParticles		= MAXPARTICLES;
+		this.particles			= new ArrayList<Particle>();
+		this.particlesToDelete	= new ArrayList<Particle>();
 		this.edgeComportements	= new int[]{EDGE_STOP, EDGE_STOP, EDGE_STOP, EDGE_STOP};
-		this.freeSemaphore		= new Semaphore(1, false);
-		this.gridSemaphore		= new Semaphore(1, false);
-		this.magnetForce		= MAGNET_FORCE;
-		
-		
-		
-		// Calcul des coeffs pour l'interpolation GL
-		xTo = Particles.computeCoefs(ENGINE_X, Particles.GL_X);
-		yTo = Particles.computeCoefs(ENGINE_Y, Particles.GL_Y);
+		this.semaphore			= new Semaphore(1, false);
 	}
 
-	/** Update the whole particle's System (each particle position) */
+	/** 
+	 * Update the whole particle's System (each particle position).
+	 * If the semaphore is not free, do nothing.
+	 * Else, delete every particles in particlesToDelete list and then update each particle position.
+	 */
     public void update()
-	{
-		// On récupère la liste des blobs dont les coordonnées ont changées
-		List<Float[]> blobsMouvements = particlesSimulation.getBlobsMouvements();
-		
-		if(freeSemaphore.tryAcquire())
+	{	
+		if(semaphore.tryAcquire())
 		{
+			// On récupère la liste des blobs dont les coordonnées ont changées
+			Map<Blob, List<Vector[]>> blobsMouvements = blobsSystem.getBlobsMouvements();
+
 			// Si la gomme est active on met à jour les dim de la matrice et la liste de particules
-			if(particlesSimulation.applyBlobEraser() && !freeParticlesToDel.isEmpty())
+			if(!particlesToDelete.isEmpty())
 			{
-				for(FreeParticle particle:freeParticlesToDel)
-					particlesFree.remove(particle);
-				freeParticlesToDel.clear();
+				for(Particle particle:particlesToDelete)
+					particles.remove(particle);
+				particlesToDelete.clear();
 
-				particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
+				simulation.setOutMatrixDim(memory, particles.size());
 			}
 
-			// Mise à jour du système de particules libres
-			for(int i = 0; i < particlesFree.size(); i++)
-				updateFreeParticle(i, particlesFree.get(i), blobsMouvements);
+			// Mise à jour du système de particules
+			for(int i = 0; i < particles.size(); i++)
+				updateParticlePosition(i, particles.get(i), blobsMouvements);
 			
-			freeSemaphore.release();
-		}
-		
-		if(gridSemaphore.tryAcquire())
-		{
-			// Mise à jour du système de particules liées
-			for(GridParticle p : particlesGrid)
-				updateGridParticle(p, blobsMouvements);
-
-			gridSemaphore.release();
-		}
-		
+			semaphore.release();
+		}	
     }
-	
-	/** Update a grid particle position (select which forces are applied) */
-	private void updateGridParticle(GridParticle particle, List<Float[]> blobsMouvements)
+
+	/** Update a particle position (select which forces are applied) */
+	private void updateParticlePosition(int index, Particle particle, Map<Blob, List<Vector[]>> blobsMouvements)
 	{
 		// On ajoute la force du fluide aux particules
-		if(particlesSimulation.applyFluidForce())
-			addFluidForce(particle, particlesSimulation.applyFluid(particle.getX(), particle.getY()));
-		
-		// On ajoute des forces liées aux blobs
-		if(particlesSimulation.applyBlobForce())
+		if(simulation.applyFluidForce())
+			addFluidForce(particle, simulation.applyFluid(particle.getPosition()));
+
+
+		// On récupère la liste des blobs intéressants
+		for(Map.Entry<Blob, List<Vector[]>> entry : blobsMouvements.entrySet())
 		{
-			// On récupère la liste des blobs intéressants
-			for(Float[] mouvement : blobsMouvements)
-			{				
-				// On ajoute la force des blobs aux particles
-				addForce(particle, mouvement);
+			Blob blob = (Blob)entry.getKey();
+			
+			if(blob.applyForce() || blob.applyEraser() || blob.applyAttractivity())
+			{
+				for(Vector[] mouvement : entry.getValue())
+				{
+					// On ajoute la force des blobs aux particles
+					if(blob.applyForce())
+						addForce(particle, blob.getBrush(), mouvement);
+
+					// On détruit les particles dans la brosse
+					if(blob.applyEraser())
+						delete(particle, blob.getBrush(), mouvement);
+					
+					// On attire les particles dans la brosse
+					if(blob.applyAttractivity())
+						addAttractivity(particle, blob.getBrush(), mouvement, blob.getAttractiveForce());
+				}
 			}
 		}
-		
+
 		// On ajoute la force des attracteurs
-		if(particlesSimulation.applyMagnetForce())
-			addAttractivity(particle);
-		
+		magnetsSystem.apply(particle);
+
 		particle.update();
-		setGridParticlePosition(particle.getI(), particle.getJ(), particle);
-	}
-	
-	/** Update a free particle position (select which forces are applied) */
-	private void updateFreeParticle(int index, FreeParticle particle, List<Float[]> blobsMouvements)
-	{
-		// On ajoute la force du fluide aux particules
-		if(particlesSimulation.applyFluidForce())
-			addFluidForce(particle, particlesSimulation.applyFluid(particle.getX(), particle.getY()));
-		
-		// On ajoute des forces liées aux blobs
-		if(particlesSimulation.applyBlobForce() || particlesSimulation.applyBlobEraser())
-		{
-			// On récupère la liste des blobs intéressants
-			for(Float[] mouvement : blobsMouvements)
-			{				
-				// On ajoute la force des blobs aux particles
-				if(particlesSimulation.applyBlobForce())
-					addForce(particle, mouvement);
-				
-				// On détruit les particles dans la brosse
-				else if(particlesSimulation.applyBlobEraser())
-					deleteFree(particle, mouvement);
-			}
-		}
-		
-		// On ajoute la force des attracteurs
-		if(particlesSimulation.applyMagnetForce())
-			addAttractivity(particle);
-		
-		particle.update();
-		setFreeParticlePosition(index, particle);
-	}
-	
-	private void reloadGridParticles()
-	{
-		gridSemaphore.acquireUninterruptibly();
-		particlesGrid.clear();
-		
-		for(int i = 0; i < nbParticlesW; i++)
-			for(int j = 0; j < nbParticlesH; j++)
-				particlesGrid.add(new GridParticle(i, j, scaleFrom(i, j), this));
-
-		gridSemaphore.release();
-	}
-	
-	// [min(initMat);max(initMat)] -> [0;1] pour moteur
-	private float[] scaleFrom(float x, float y) {
-		return new float[]{((xFrom[0] * x) + xFrom[1]), ((yFrom[0] * y) + yFrom[1])};
-	}
-	
-	// [0;1] -> [minGl;maxGl]
-	private float[] scaleTo(float x, float y) {
-		return new float[]{((xTo[0] * x) + xTo[1]), ((yTo[0] * y) + yTo[1])};
-	}
-
-	/**
-	 * Set up in the outGridMatrix the particle position scaled to FluidParticleSimulation.GL_...
-	 * @param i	Column's index of the particle
-	 * @param j Line's index of the particle
-	 * @param position Position of the particle scaled by ParticlesSystem.ENGINE_...
-	 */
-	protected void setGridParticlePosition(int i, int j, GridParticle particle) {
-		particlesSimulation.getGridMatrix().setcell2d(i, j, scaleTo(particle.getX(), particle.getY()));
+		setParticlePosition(index, particle);
 	}
 	
 	/**
-	 * Set up in the outFreeMatrix the particle position scaled to FluidParticleSimulation.GL_...
-	 * @param i Line's index in outFreeMatrix
-	 * @param x Abscissa of the particle scaled by ParticlesSystem.ENGINE_X
-	 * @param y Ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
+	 * Set up in the outMatrix the particle position scaled to Max.GL_...
+	 * @param index Line's index in outFreeMatrix
+	 * @param particle Particle to set up position
 	 */
-	protected void setFreeParticlePosition(int index, FreeParticle particle)
+	protected void setParticlePosition(int index, Particle particle)
 	{
-		for(int j = 0; j < memory; j++)
-			particlesSimulation.getFreeMatrix().setcell2d(j, index, scaleTo(particle.getXHistory().get(j), particle.getYHistory().get(j)));
-	}
-	
-	/**
-	 * Set up in the initGridMatrix the particle position scaled to FluidParticleSimulation.GL_...
-	 * @param i	Column's index of the particle
-	 * @param j Line's index of the particle
-	 * @param initX Initial abscissa of the particle scaled by ParticlesSystem.ENGINE_X
-	 * @param initY Initial ordinate of the particle scaled by ParticlesSystem.ENGINE_Y
-	 */
-	protected void setParticleInitPosition(int i, int j, float initX, float initY) {
-		particlesSimulation.getInitMatrix().setcell2d(i, j, scaleTo(initX, initY));
-	}
-	
-	private void addForce(Particle particle, Float[] mouvement)
-	{
-		if(brush.intersect(particle, mouvement[0], mouvement[1]))
-			particle.addForce(mouvement[2], mouvement[3]);
-	}
-	
-	private void deleteFree(FreeParticle particle, Float[] mouvement)
-	{
-		if(brush.intersect(particle, mouvement[0], mouvement[1]))
-			freeParticlesToDel.add(particle);
-	}
-
-	private void addAttractivity(Particle particle)
-	{
-		for(Magnet magnet : magnets)
-			magnet.applyMagnetForce(particle);
-	}
-	
-	private void addFluidForce(Particle particle, float[] delta)
-	{
-		if(Math.abs(delta[0]) > seuil[0] || Math.abs(delta[1]) > seuil[0])
-		{
-			particle.applyForce(delta[0], delta[1]);
+		for(int i = 0; i < memory; i++) {
+			simulation.setOutMatrix(i, index, particle.getHistory().get(i));
 		}
 	}
 	
 	/**
-	 * Add <parameter>nb</parameter> free particles in the system at the indicates position
-	 * @param x Abscissa of the position to add particles scaled by ParticlesSystem.ENGINE_X
-	 * @param y Ordinate of the position to add particles scaled by ParticlesSystem.ENGINE_Y
+	 * Add some force to the particle if its position intersect the brush
+	 * @param particle Particle on which apply force
+	 * @param brush Brush used by blob
+	 * @param mouvement Describes the blob's mouvement : {position, delta} 
+	 */
+	protected void addForce(Particle particle, Brush brush, Vector[] mouvement)
+	{
+		if(brush.intersect(particle.getPosition(), mouvement[0]))
+			particle.addForce(mouvement[1]);
+	}
+	
+	/**
+	 * Delete the particle is its position intersect the brush.
+	 * The particle is not directly cleared but added to particlesToDelete list.
+	 * @param particle Particle to delete
+	 * @param brush Brush used by blob
+	 * @param mouvement Describes the blob's mouvement : {position, delta} 
+	 */
+	protected void delete(Particle particle, Brush brush, Vector[] mouvement)
+	{
+		if(brush.intersect(particle.getPosition(), mouvement[0]))
+			particlesToDelete.add(particle);
+	}
+
+	/**
+	 * Add attractive force to the particle.
+	 * A Magnet point is created on the stored blob position.
+	 * @param particle Particle to delete
+	 * @param brush Brush used by blob
+	 * @param mouvement Describes the blob's mouvement : {position, delta} 
+	 * @param force Attractive force to apply
+	 */
+	private void addAttractivity(Particle particle, Brush brush, Vector[] mouvement, double force)
+	{
+		if(brush.intersect(particle.getPosition(), mouvement[0]))
+			new PointMagnet(mouvement[0], force).applyMagnetForce(particle);
+	}
+	
+	/**
+	 * Apply fluid force to the particle
+	 * @param particle Particle on which apply force
+	 * @param delta Fluid force to apply
+	 */
+	protected void addFluidForce(Particle particle, Vector delta)
+	{
+		if(Math.abs(delta.x) > threshold.x || Math.abs(delta.y) > threshold.y)
+			particle.applyForce(delta);
+	}
+	
+	/**
+	 * Add <parameter>nb</parameter> particles in the system at the given position
+	 * @param position Position to add particles scaled by Max.ENGINE_...
 	 * @param nbToAdd Number of particles to add
 	 */
-	public void addFreeParticles(float x, float y, int nbToAdd)
+	public void addParticles(Vector position, int nbToAdd)
 	{
 		// Si la matrice est pas pleine on ajoute une ligne
-		int diffToMax = maxFreeParticles - particlesFree.size();
+		int diffToMax = maxParticles - particles.size();
 		if(diffToMax > 0)
 		{
 			int realNbToAdd = diffToMax > nbToAdd ? nbToAdd : diffToMax;
-			particlesSimulation.setFreeMatrixDim(memory, particlesFree.size() + realNbToAdd);
+			simulation.setOutMatrixDim(memory, particles.size() + realNbToAdd);
 		}
 		
-		freeSemaphore.acquireUninterruptibly();
+		semaphore.acquireUninterruptibly();
 
 		for(int i = 0; i < nbToAdd; i++)
 		{
-			if(particlesFree.size() >= maxFreeParticles)
-				particlesFree.remove(0);
-			particlesFree.add(new FreeParticle(x, y, this));
+			if(particles.size() >= maxParticles)
+				particles.remove(0);
+			particles.add(new Particle(position, this));
 		}
 
-		freeSemaphore.release();
+		semaphore.release();
 	}
-
-	public void genFreeParticles()
-	{
-		Random generator = new Random();
-		particlesSimulation.setFreeMatrixDim(memory, maxFreeParticles);
-		
-		freeSemaphore.acquireUninterruptibly();
-		
-		particlesFree.clear();
-		for(current = 0; current < maxFreeParticles; current++)
-			particlesFree.add(new FreeParticle(generator.nextFloat(), generator.nextFloat(), this));
-		
-		freeSemaphore.release();
+	
+	public void print(String msg) {
+		simulation.printOut(msg);
 	}
 	
 	/**
-	 * Determine if the system has at least one tied up particle
-	 * @return <code>true</code> if at least one tied up particle exists, <code>false</code> otherwise
+	 * Determine if the system has at least one particle
+	 * @return <code>true</code> if at least one particle exists, <code>false</code> otherwise
 	 */
-	public boolean hasGridParticles() {
-		return !particlesGrid.isEmpty();
+	public boolean hasParticles() {
+		return !particles.isEmpty();
 	}
 	
-	public boolean hasFreeParticles() {
-		return !particlesFree.isEmpty();
-	}
-
 	/**
 	 * Reset the particle system.
-	 * Free particles will be cleared and tied up particles will be restored to initial position
+	 * Particles will be cleared.
 	 */
 	public void reset()
 	{
-		particlesSimulation.setGridMatrixDim(nbParticlesW, nbParticlesH);
-		reloadGridParticles();
-		
-		freeSemaphore.acquireUninterruptibly();
-		particlesFree.clear();
-		freeSemaphore.release();
-		
-		particlesSimulation.setFreeMatrixDim(0, 0);
-		current = 0;
+		semaphore.acquireUninterruptibly();
+		particles.clear();
+		semaphore.release();
+		simulation.setOutMatrixDim(0, 0);
 	}
 
 	/** Properly destroy the system */
-	public void destroy() {
-		gridSemaphore.acquireUninterruptibly();
-		particlesGrid.clear();
-		gridSemaphore.release();
-		
-		freeSemaphore.acquireUninterruptibly();
-		particlesFree.clear();
-		freeSemaphore.release();
-	}
-	
-	/**
-	 * Set the circle radius
-	 * @param radius New radius
-	 * @return The current particle's system
-	 */
-	public ParticlesSystem setCircleRadius(float radius) {
-		brush.setRadius(radius);
-		return this;
+	public void destroy()
+	{
+		semaphore.acquireUninterruptibly();
+		particles.clear();
+		semaphore.release();
+		simulation.setOutMatrixDim(0, 0);
 	}
 
 	/**
 	 * Set the threshold
-	 * @param threshold New threshold
+	 * @param minThreshold New threshold min
+	 * @param maxThreshold New threshold max
 	 * @return The current particle's system
 	 */
-	public ParticlesSystem setThreshold(float minThreshold, float maxThreshold) {
-		this.seuil = new float[]{minThreshold, maxThreshold};
+	public ParticlesSystem setThreshold(double minThreshold, double maxThreshold) {
+		this.threshold = new Vector(minThreshold, maxThreshold);
 		return this;
 	}
 	
@@ -380,7 +321,7 @@ public class ParticlesSystem
 	 * @param stiffness New stiffness
 	 * @return The current particle's system
 	 */
-	public ParticlesSystem setStiffness(float stiffness) {
+	public ParticlesSystem setStiffness(double stiffness) {
 		this.stiffness = stiffness;
 		return this;
 	}
@@ -390,8 +331,15 @@ public class ParticlesSystem
 	 * @param friction New friction
 	 * @return The current particle's system
 	 */
-	public ParticlesSystem setFriction(float friction) {
-		this.friction = friction;
+	public ParticlesSystem setFriction(double friction) {
+		if(Math.abs(friction) > 1.f)
+		{
+			this.friction = Math.signum(friction) * 1.f;
+			simulation.printOut("You cannot set friction up to 100% !");
+		}
+		else
+			this.friction = friction;
+		
 		return this;
 	}
 	
@@ -400,61 +348,40 @@ public class ParticlesSystem
 	 * @param momentum New momentum
 	 * @return The current particle's system
 	 */
-	public ParticlesSystem setMomentum(float momentum) {
+	public ParticlesSystem setMomentum(double momentum) {
 		this.momentum = momentum;
 		return this;
 	}
-	
-	/**
-	 * Set the rectangle's brush height
-	 * @param height New rectangle's brush height
-	 * @return The current particle's system
-	 */
-	public ParticlesSystem setBoxHeight(float height) {
-		brush.setBoxHeight(height);
-		return this;
-	}
 
 	/**
-	 * Set the rectangle's brush width
-	 * @param width New rectangle's brush width
-	 * @return The current particle's system
+	 * Set the maximum of particles
+	 * @param maxParticles New maximum
 	 */
-	public ParticlesSystem setBoxWidth(float width) {
-		brush.setBoxWidth(width);
-		return this;
-	}
-	
-	/**
-	 * Set the maximum of free particles
-	 * @param maxFreeParticles New maximum
-	 * @return The current particle's system
-	 */
-	public void setMaxFreeParticles(int maxFreeParticles)
+	public void setMaxParticles(int maxParticles)
 	{
-		if(maxFreeParticles >= 0)
+		if(maxParticles >= 0)
 		{
-			// On réduit le nombre max de particules libres
-			if(this.maxFreeParticles > maxFreeParticles)
+			// On réduit le nombre max de particules
+			if(this.maxParticles > maxParticles)
 			{
-				// On conserve les maxFreeParticles premières particules
-				if(particlesFree.size() > maxFreeParticles)
+				// On conserve les maxParticles premières particules
+				if(particles.size() > maxParticles)
 				{
-					freeSemaphore.acquireUninterruptibly();
-					particlesFree = particlesFree.subList(0, maxFreeParticles);
-					freeSemaphore.release();
+					semaphore.acquireUninterruptibly();
+					particles = particles.subList(0, maxParticles);
+					semaphore.release();
 				}
 				
 				// On met à jour les dimensions de la matrice
-				particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
+				simulation.setOutMatrixDim(memory, particles.size());
 			}
 
-			this.maxFreeParticles = maxFreeParticles;
+			this.maxParticles = maxParticles;
 		}
 	}
 	
 	/**
-	 * Set free particles' memory
+	 * Set particles' memory
 	 * @param memory New memory
 	 */
 	public void setMemory(int memory)
@@ -462,50 +389,9 @@ public class ParticlesSystem
 		if(memory > 0)
 		{
 			this.memory = memory;
-			particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
+			simulation.setOutMatrixDim(memory, particles.size());
 		}
 	}
-
-	/**
-	 * Set dimensions of the grid for tied up particles
-	 * @param nbParticlesW Width of the grid
-	 * @param nbParticlesH Height of the grid
-	 */
-	public void setNbParticles(int nbParticlesW, int nbParticlesH)
-	{
-		this.nbParticlesW	= nbParticlesW;
-		this.nbParticlesH	= nbParticlesH;
-		particlesSimulation.setGridMatrixDim(nbParticlesW, nbParticlesH);
-		
-		if(nbParticlesW > 0 && nbParticlesH > 0)
-		{
-			// Calcul des marges pour centrer les particules dans l'Engine
-			float xMargin = (1.f / (float)(nbParticlesW + 1)) * (ENGINE_X[1] - ENGINE_X[0]);
-			float yMargin = (1.f / (float)(nbParticlesH + 1)) * (ENGINE_Y[1] - ENGINE_Y[0]);
-
-			// Calcul des coeffs pour l'interpolation Engine
-			xFrom = Particles.computeCoefs(0, nbParticlesW - 1, ENGINE_X[0] + xMargin, ENGINE_X[1] - xMargin);
-			yFrom = Particles.computeCoefs(0, nbParticlesH - 1, ENGINE_Y[0] + yMargin, ENGINE_Y[1] - yMargin);
-			
-			reloadGridParticles();
-		}
-		else
-		{
-			gridSemaphore.acquireUninterruptibly();
-			particlesGrid.clear();
-			gridSemaphore.release();
-		}
-	}
-
-	/**
-	 * Select which brush to use
-	 * @param type Index of the brush (use static members)
-	 */
-	public void setBrush(int type) {
-		brush.setType(type);
-	}
-	
-	/********************************* GETTERS *********************************/
 	
 	/**
 	 * Getter : stiffness
@@ -513,7 +399,7 @@ public class ParticlesSystem
 	 *			système.
      * @since	1.0
      */
-	public float getStiffness() {
+	public double getStiffness() {
 		return stiffness;
 	}
 
@@ -523,7 +409,7 @@ public class ParticlesSystem
 	 *			Le moment est un le déplacement aléatoire d'une particule.
      * @since	1.0
      */
-	public float getMomentum() {
+	public double getMomentum() {
 		return momentum;
 	}
 	
@@ -533,7 +419,7 @@ public class ParticlesSystem
 	 *			particules du système. 0% = libre, 100% = immobile
      * @since	1.0
      */
-	public float getFriction() {
+	public double getFriction() {
 		return friction;
 	}
 	
@@ -543,8 +429,8 @@ public class ParticlesSystem
 	 *			considérées comme immobiles.
      * @since	1.0
      */
-	public float getSeuilMin() {
-		return seuil[0];
+	public double getSeuilMin() {
+		return threshold.x;
 	}
 	
 	/**
@@ -552,8 +438,8 @@ public class ParticlesSystem
 	 * @return	Seuil au dessus duquel les particules du système seront limités.
      * @since	1.0
      */
-	public float getSeuilMax() {
-		return seuil[1];
+	public double getSeuilMax() {
+		return threshold.y;
 	}
 
 	/**
@@ -565,108 +451,114 @@ public class ParticlesSystem
 	public int getMemory() {
 		return memory;
 	}
-	
+
 	/**
-	 * Getter : MagnetForce
-	 * @return	Current magnet force
-     * @since	1.0
-     */
-	public float getMagnetForce() {
-		return magnetForce;
-	}
-
-	public void setMagnetForce(float magnetForce) {
-		this.magnetForce = magnetForce;
-	}
-
-	public void loadFreeParticles(JitterMatrix jm)
+	 * Load initial's particles positions from a matrix.
+	 * @param jm Matrix of initials positions
+	 */
+	public void loadParticles(JitterMatrix jm)
 	{
 		int[] dim = jm.getDim();
-		int inf = Math.min(dim[0], maxFreeParticles);
+		int inf = Math.min(dim[0], maxParticles);
 		
-		freeSemaphore.acquireUninterruptibly();
-		particlesFree.clear();
+		if(inf == maxParticles)
+			simulation.printOut("You are trying to add " + dim[0] + " particles but I can't contain more than " + maxParticles + " particles. See the \"" + Simulation.Particles.MSG_MAXPART + "\" message.");
+		
+		semaphore.acquireUninterruptibly();
+		particles.clear();
 
 		for(int i = 0; i < inf; i++)
 		{
 			float[] cell = jm.getcell2dFloat(i, 0);
-			particlesFree.add(new FreeParticle(cell[0], cell[1], this));
+			particles.add(new Particle(new Vector(cell[0], cell[1]), this));
 		}
-		freeSemaphore.release();
+		semaphore.release();
 		
-		particlesSimulation.setFreeMatrixDim(memory, particlesFree.size());
+		simulation.setOutMatrixDim(memory, particles.size());
 	}
 	
-	public void initMagnets(JitterMatrix jm)
-	{
-		magnets.clear();
-
-		int[] dim = jm.getDim();
-		float[] values = new float[6];
-		
-		for(int i = 0; i < dim[1]; i++)
-		{	
-			//dim = 0 for line, 1 for column
-			jm.copyVectorToArray(0, new int[]{0, i}, values, dim[0], 0);
-			
-			// Point
-			if(values[0] == 0.f)
-				magnets.add(new PointMagnet(values[1], values[2], values[4], values[5]));
-			
-			// Line
-			else if(values[0] == 1.f && (values[1] != 0.f || values[2] != 0.f))
-				magnets.add(new LineMagnet(values[1], values[2], values[3], values[4], values[5]));
-			
-			else
-				particlesSimulation.printOut("Unknown magnet type");
-		}
-	}
-	
-	public float getEdgePosition(int edge, float position)
+	/**
+	 * Allow to particles to computes theirs new position when they meet an edge
+	 * @param edge Which edge is met (see static members)
+	 * @param position Current 1D position (because only one dimension goes through an edge!)
+	 * @return New position after the edge meeting
+	 */
+	public double getEdgePosition(int edge, double position)
 	{
 		switch(edgeComportements[edge])
 		{
 			case EDGE_STOP:
-				if(edge < RIGHT_EDGE)// Left or bottom
-					return 0.f;
-				else
-					return 1.f;
+				switch(edge)
+				{
+					case LEFT_EDGE:
+						return Max.ENGINE_MIN.x;
+					case BOTTOM_EDGE:
+						return Max.ENGINE_MIN.y;
+					case RIGHT_EDGE:
+						return Max.ENGINE_MAX.x;
+					case TOP_EDGE:
+						return Max.ENGINE_MAX.y;
+				}
 
 			case EDGE_BOUND:
-				if(edge < RIGHT_EDGE)// Left or bottom
-					return -position;
-				else
-					return 2.f - position;
-
+				switch(edge)
+				{
+					case LEFT_EDGE:
+						return (2 * Max.ENGINE_MIN.x) - position;
+					case BOTTOM_EDGE:
+						return (2 * Max.ENGINE_MIN.y) - position;
+					case RIGHT_EDGE:
+						return (2 * Max.ENGINE_MAX.x) - position;
+					case TOP_EDGE:
+						return (2 * Max.ENGINE_MAX.y) - position;
+				}
+					
 			case EDGE_BOOM:
-				if(edge < RIGHT_EDGE)// Left or bottom
-					return 1.f + position;
-				else
-					return 1.f - position;
-				
-			default:
-				return position;
+				switch(edge)
+				{
+					case LEFT_EDGE:
+						return Max.ENGINE_MAX.x - (Max.ENGINE_MIN.x - position);
+					case BOTTOM_EDGE:
+						return Max.ENGINE_MAX.y - (Max.ENGINE_MIN.y - position);
+					case RIGHT_EDGE:
+						return Max.ENGINE_MIN.x + (position - Max.ENGINE_MAX.x);
+					case TOP_EDGE:
+						return Max.ENGINE_MIN.y + (position - Max.ENGINE_MAX.y);
+				}
 		}
+		return position;
 	}
 	
-	public float getEdgeVelocity(int edge)
+	/**
+	 * Get the current velocity for given edge
+	 * @param edge Concerned edge (see static members)
+	 * @return Velocity to apply on whatever goes through the edge
+	 */
+	public double getEdgeVelocity(int edge)
 	{
 		switch(edgeComportements[edge])
 		{
 			case EDGE_STOP:
-				return 0.f;
+				return 0.;
 
 			case EDGE_BOUND:
-				return -0.5f;
+				return -0.5;
 
 			case EDGE_BOOM:
-				return 1.f;
+				return 1.;
 				
 			default:
-				return 1.f;
+				return 1.;
 		}
 	}
 
+	/**
+	 * Set the edge comportement for each window's edge (use static members)
+	 * @param leftComportement Comportement on window's left edge
+	 * @param bottomComportement Comportement on window's bottom edge
+	 * @param rightComportement Comportement on window's right edge
+	 * @param topComportement Comportement on window's top edge
+	 */
 	public void setEdges(int leftComportement, int bottomComportement, int rightComportement, int topComportement)
 	{
 		edgeComportements[LEFT_EDGE]	= leftComportement;

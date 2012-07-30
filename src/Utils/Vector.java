@@ -1,7 +1,7 @@
 package Utils;
 
 /**
- * Vector is a common implementation of 3D Vectors.
+ * Vector2 is a common implementation of 2D Vectors.
  * 
  * @author	CreArtCom's Studio
  * @author	Léo LEFEBVRE
@@ -15,78 +15,63 @@ public final class Vector
 	/** The Y Value */
 	public double y;
 	
-	/** The Z Value */
-	public double z;
-	
 	/** The current vector's norm */
 	protected double norm;
 	
-	/** 3D normalised vector oriented to X */
-	static public Vector UNITX = new Vector(1., 0., 0.);
+	/** 2D normalised vector oriented to Y */
+	static public Vector NULL = new Vector(0., 0.);
 	
-	/** 3D normalised vector oriented to Y */
-	static public Vector UNITY = new Vector(0., 1., 0.);
+	/** 2D normalised vector oriented to X */
+	static public Vector UNITX = new Vector(1., 0.);
 	
-	/** 3D normalised vector oriented to Z */
-	static public Vector UNITZ = new Vector(0., 0., 1.);
+	/** 2D normalised vector oriented to Y */
+	static public Vector UNITY = new Vector(0., 1.);
 
 	/**
-	 * 3D constructor
+	 * 2D constructor
 	 * @param x The X value
 	 * @param y The Y value
-	 * @param z The Z value
 	 */
-	public Vector(double x, double y, double z)
+	public Vector(double x, double y)
 	{
 		this.x = x;
 		this.y = y;
-		this.z = z;
 		updated();
 	}
 	
 	/**
-	 * 2D constructor (z will be set to 0)
-	 * @param x The X value
-	 * @param y The Y value
-	 */
-	public Vector(double x, double y) {
-		this(x, y, 0.);
-	}
-	
-	/**
-	 * 1D constructor (y and z will be set to 0)
+	 * 1D constructor (y will be set to 0)
 	 * @param x The X value
 	 */
 	public Vector(double x) {
-		this(x, 0., 0.);
+		this(x, 0.);
 	}
 	
 	/**
 	 * Default constructor
-	 * Construct an zero vector (0., 0., 0.)
+	 * Construct an zero vector (0., 0.)
 	 */
 	public Vector() {
-		this(0., 0., 0.);
+		this(0., 0.);
 	}
 	
 	/**
 	 * Copy constructor
-	 * @param vector Vector to copy
+	 * @param vector Vector3 to copy
 	 */
 	public Vector(Vector vector) {
-		this(vector.x, vector.y, vector.z);
+		this(vector.x, vector.y);
 	}
 	
 	/**
 	 * Computes the addition : this + vector
-	 * @param vector Vector to add
+	 * @param vector Vector3 to add
 	 * @return A reference to this vector
 	 */
 	public Vector Add(Vector vector)
 	{
 		x += vector.x;
 		y += vector.y;
-		z += vector.z;
 		
 		updated();
 		return this;
@@ -107,14 +92,13 @@ public final class Vector
 
 	/**
 	 * Computes the subtraction : this - vector
-	 * @param vector Vector to subtract
+	 * @param vector Vector3 to subtract
 	 * @return A reference to this vector
 	 */
 	public Vector Subtract(Vector vector)
 	{
 		x -= vector.x;
 		y -= vector.y;
-		z -= vector.z;
 		
 		updated();
 		return this;
@@ -122,8 +106,8 @@ public final class Vector
 	
 	/**
 	 * Computes a subtraction between to vectors : u - v
-	 * @param u Vector which will be subtracted
-	 * @param v Vector to subtract
+	 * @param u Vector3 which will be subtracted
+	 * @param v Vector3 to subtract
 	 * @return The result vector
 	 */
 	static public Vector Subtract(Vector u, Vector v)
@@ -138,21 +122,20 @@ public final class Vector
 	 * @param vector Product vector
 	 * @return A reference to this vector
 	 */
-	public double Dot(Vector vector)
-	{
-		return ((x * vector.x) + (y * vector.y) + (z * vector.z));
+	public double Dot(Vector vector) {
+		return ((x * vector.x) + (y * vector.y));
 	}
 	
 	/**
-	 * Computes the scalar product : this.w * vector.w for each w (x, y & z)
-	 * @param vector A vector containing the three scalar to multiply by.
+	 * Computes the scalar product : this.w * vector.w for each w (x & y)
+	 * Hacking way to avoid homogeneous coordinates and the use of matrix
+	 * @param vector A vector containing the two scalar to multiply by.
 	 * @return A reference to this vector
 	 */
 	public Vector Mul(Vector vector)
 	{
 		x *= vector.x;
 		y *= vector.y;
-		z *= vector.z;
 		
 		updated();
 		return this;
@@ -167,24 +150,6 @@ public final class Vector
 	{
 		x *= k;
 		y *= k;
-		z *= k;
-		
-		updated();
-		return this;
-	}
-	
-	/**
-	 * Computes the cross product : this ^ vector
-	 * @param vector Product vector
-	 * @return A reference to this vector
-	 */
-	public Vector Cross(Vector vector)
-	{
-		Vector temp = new Vector(this);
-		
-		x = (temp.y * vector.z) - (temp.z * vector.y);
-		y = (temp.z * vector.x) - (temp.x * vector.z);
-		z = (temp.x * vector.y) - (temp.y * vector.x);
 		
 		updated();
 		return this;
@@ -194,8 +159,7 @@ public final class Vector
 	 * Getter : Norm
 	 * @return Current norm
 	 */
-	public double getNorm()
-	{
+	public double getNorm() {
 		return norm;
 	}
 	
@@ -207,7 +171,6 @@ public final class Vector
 	{
 		x /= norm;
 		y /= norm;
-		z /= norm;
 		
 		return this;
 	}
@@ -216,10 +179,8 @@ public final class Vector
 	 * Computes new norm.
 	 * Must be called everytime coordinates had changed.
 	 */
-	protected void updated()
-	{
-		// Computes new norm
-		norm = Math.sqrt((x * x) + (y * y) + (z * z));
+	protected void updated() {
+		norm = Math.sqrt((x * x) + (y * y));
 	}
 	
 	/**
@@ -227,8 +188,15 @@ public final class Vector
 	 * @return The string description
 	 */
 	@Override
-	public String toString()
-	{
-		return "Vector(" + x + ", " + y + ", " + z + ")";
+	public String toString() {
+		return "Vector(" + x + ", " + y + ")";
+	}
+	
+	/**
+	 * Return this vector as a float array
+	 * @return The float array
+	 */
+	public float[] toFloatArray() {
+		return new float[]{(float)x, (float)y};
 	}
 }
